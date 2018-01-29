@@ -127,7 +127,10 @@ def main():
                     ##########################sending message#############################
                     #1. update message queue of the user based on the trust scores it has with its contacts
                     #2. broadcast messages based on the trust scores and all TODO: figure this out; what happens over here
+                    # some messages get sent to the receivers, some get dropped
                     #3. update message queues of the receiver
+                    #4. decrement the number of hops in the message itself
+                    #5. update the Statistics class; dropped messages; messages received
                     ######################################################################
                     #TODO: send to all receivers connected to this user, update receiver queues
      
@@ -141,7 +144,7 @@ def main():
             #send message from the user; sending message involves keeping track of the message the user is sending which means that I need to know that this particular user sent a message in this particular hour 
             #check whether the user has any queue to send
 
-
+        #TODO For 29th January -> figure out the trust protocol; implement the rest of the stuff
 
 
 
