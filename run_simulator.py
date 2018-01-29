@@ -76,9 +76,9 @@ class Statistics(object):
 
       
       
-       
-      
-
+def get_users_connected_to_tower_a_particular_hour(tower, hour):
+    pass       
+     
 def get_all_users_connected_to_towers(towers):
     pass
 
@@ -90,6 +90,9 @@ def get_all_towers_within_region():
 def get_all_towers_within_hour(hour):
     pass
 
+def initialize_source_destinations():
+    pass
+
 def main():
     parser = argparse.ArgumentParser()
 
@@ -97,10 +100,15 @@ def main():
     
     results = parser.parse_args()
 
+    #instantiate the Statistics class; make it global later
+
     total_hours = int(results.total_time_for_simulation)
-    userID_list = []#contains all the randomly chosen users in the simulation
+    src_dst_list = initialize_source_destinations() #contains tuples of all the randomly chosen sender/receiver pairs in the simulation
+    num_users = #total number of users in the simulation; total number of users I choose to simulate
+
    #TODO####initialize all the users
     for i in xrange(num_users):
+
         #initialize each user with its id, tower, empty queues, contacts, precomputed trust scores, and fixed message
         #TODO: toask: assuming that these users are randomly chosen (any tower); how many users overall -> get these users from the list of total users?
         #TODO: toask: initialize all of the users from their location; what happens if these users do not exist in the current location 
@@ -113,7 +121,14 @@ def main():
         for tower in total_towers:
             users = get_users_connected_to_tower_in_a_particular_hour(tower, hour)
             for user in users:
-                if user in userID_list:
+                #check if user is present in any one of the src_dst pairs that I have
+                #if yes:
+                    #send message
+                    ##########################sending message#############################
+                    #1. update message queue of the user based on the trust scores it has with its contacts
+                    #2. broadcast messages based on the trust scores and all TODO: figure this out; what happens over here
+                    #3. update message queues of the receiver
+                    ######################################################################
                     #TODO: send to all receivers connected to this user, update receiver queues
      
             #a) check whether the message was intended for the receiver, if yes, update statistics; if no increment number of hops and update the queues
