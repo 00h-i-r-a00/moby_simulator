@@ -94,24 +94,29 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-t', action='store', dest='total_time_for_simulation', help='Overall time you need the simulation to run (in hours)')
+    
     results = parser.parse_args()
 
     total_hours = int(results.total_time_for_simulation)
-    
+    userID_list = []#contains all the randomly chosen users in the simulation
    #TODO####initialize all the users
-    ## read all users   
-    ## TODO: get their tower mappings, see if I can get this in a file
-    ##initalize them to their current tower location (note these towers would only be inside the list of towers that I selected for use)
-    ##
+    for i in xrange(num_users):
+        #initialize each user with its id, tower, empty queues, contacts, precomputed trust scores, and fixed message
+        #TODO: toask: assuming that these users are randomly chosen (any tower); how many users overall -> get these users from the list of total users?
+        #TODO: toask: initialize all of the users from their location; what happens if these users do not exist in the current location 
+        ## TODO: get the user, tower mappings for every hour
 
     ##running the simulation
 
     for hour in total_hours:
         tower = get_all_towers_within_hour(hour)
         for tower in total_towers:
-            #TODO: select random users in the current tower, send it to all receivers in the same tower
-            #TODO: send function -> send to all receivers, update receiver queues; 
-            #a) check whether the message was intended for the receiver, if yes, update statistics; if no decrement number of hops and update the queues
+            users = get_users_connected_to_tower_in_a_particular_hour(tower, hour)
+            for user in users:
+                if user in userID_list:
+                    #TODO: send to all receivers connected to this user, update receiver queues
+     
+            #a) check whether the message was intended for the receiver, if yes, update statistics; if no increment number of hops and update the queues
             #TODO: when updating the queues, do I send from the receiver at the same time too?
             
             
