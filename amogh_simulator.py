@@ -8,6 +8,8 @@ MESSAGE_FILE_FORMAT = ".msg"
 network_state_old = defaultdict(set)
 network_state_new = defaultdict(set)
 message_queue = defaultdict(list)
+message_delivered = defaultdict(list)
+message_delivery_count = 0
 dirty_nodes = []
 
 class Message:
@@ -21,13 +23,15 @@ class Message:
 
 def main():
     first_state = True
+    global dirty_nodes
+    global message_delivery_count
     for current_hour in xrange(0,6):
-        global dirty_nodes
         dirty_nodes = []
         current_data_file = DATA_FILE_PREFIX + str(current_hour) + DATA_FILE_FORMAT
         current_message_file = DATA_FILE_PREFIX + str(current_hour) + MESSAGE_FILE_FORMAT
         users_this_hour = []
-        print "Processing hour: " + str(current_hour)
+        print "Message Delivery count: ", message_delivery_count
+        print "Processing hour: ", current_hour
         with open(current_data_file) as data:
             for entry in data:
                 # Just calcuate this hours state, no modification to last hour.
@@ -71,6 +75,19 @@ def main():
             if dirty:
                 # print "Dirty node in this tower, adding all users!"
                 dirty_nodes += users_in_tower # This list is gonna have a lot of repetitions, but it's OK.
+        print "Messages for this hour sent, message exchanges complete. Perform destination check"
+        for user, mq in message_queue.iteritems():
+            new_mq = []
+            for msg in mq:
+                print "Dst: ", msg.dst, "User:", user
+                if msg.dst == user and msg.id not in message_delivered[user]:
+                    message_delivery_count += 1
+                    message_delivered[user].append(msg.id)
+                    msg = Message(msg.id, int(msg.ttl)-60, msg.src, msg.dst, int(msg.hop)+1, msg.trust)
+                elif msg.ttl > 1:
+                    msg = Message(msg.id, int(msg.ttl)-1, msg.src, msg.dst, int(msg.hop)+1, msg.trust)
+                new_mq.append(msg)
+            message_queue[user] = new_mq
         print "Updaing old state to new state."
         network_state_old = network_state_new
 
