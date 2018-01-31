@@ -8,7 +8,8 @@ MESSAGE_FILE_FORMAT = ".msg"
 network_state_old = defaultdict(set)
 network_state_new = defaultdict(set)
 message_queue = defaultdict(list)
-dirty_nodes = []
+dirty_nodes = defaultdict(list)
+ALL_KEY = -459
 
 class Message:
     def __init__(self, id, ttl, src, dst, hop, trust):
@@ -23,7 +24,7 @@ def main():
     first_state = True
     for current_hour in xrange(0,6):
         global dirty_nodes
-        dirty_nodes = []
+        dirty_nodes = defaultdict(list)
         current_data_file = DATA_FILE_PREFIX + str(current_hour) + DATA_FILE_FORMAT
         current_message_file = DATA_FILE_PREFIX + str(current_hour) + MESSAGE_FILE_FORMAT
         users_this_hour = []
@@ -56,29 +57,32 @@ def main():
                 id, ttl, src, dst, hop, trust = entry.strip().split(",")
                 msg = Message(id, ttl, src, dst, hop, trust)
                 message_queue[src].append(msg)
-                dirty_nodes.append(src)
+                dirty_nodes[src].append(ALL_KEY)
         if not first_state:
+            print "Not first!!"
             for tower in network_state_new.keys():
                 # Nodes that are new to a tower need to trigger msg exchanges, ignore this for first run
                 # as the first run marks all of them as new!
                 transitions_added = network_state_new[tower].difference(network_state_old[tower])
-                dirty_nodes += transitions_added
+                for user in transitions_added:
+                    dirty_nodes[user].append(tower)
         first_state = False
         print "Simulating message exchange on all nodes that belong to a network."
         for tower in network_state_new.keys():
             users_in_tower = network_state_new[tower]
-            dirty = perform_message_exchanges(users_in_tower)
+            dirty = perform_message_exchanges(tower, users_in_tower)
             if dirty:
                 # print "Dirty node in this tower, adding all users!"
-                dirty_nodes += users_in_tower # This list is gonna have a lot of repetitions, but it's OK.
+                for user in users_in_tower:
+                    dirty_nodes[user].append(tower)
         print "Updaing old state to new state."
         network_state_old = network_state_new
 
-def perform_message_exchanges(users):
+def perform_message_exchanges(tower_id, users):
     global dirty_nodes
     dirty = False
     for u1 in users:
-        if str(u1) in dirty_nodes:
+        if str(u1) in dirty_nodes.keys() and (ALL_KEY in dirty_nodes[str(u1)] or tower_id not in dirty_nodes[str(u1)]):
             dirty = True
             for u2 in users:
                 if u1 != u2:
