@@ -72,6 +72,7 @@ def main():
                     dirty_nodes += transitions_added
             first_state = False
             print "Simulating message exchange on all nodes that belong to a network."
+            print "Number of dirty nodes: ", len(dirty_nodes)
             for tower in network_state_new.keys():
                 users_in_tower = network_state_new[tower]
                 temp_dirty_bit = False
