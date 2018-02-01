@@ -12,7 +12,7 @@ def main():
     infile = sys.argv[1]
     for i in xrange(0,4):
         print "Extracting towers in ", infile,"for: ", c[i], " ", x[i], " ", y[i]
-        with open(infile) as data, open("towers_"+str(i)) as outfile:
+        with open(infile) as data, open("towers_"+str(i), "w+") as outfile:
             for entry in data:
                 line = entry.strip().split(' ')
                 tower_id = line[0]
