@@ -82,7 +82,7 @@ def main():
             for user, mq in message_queue.iteritems():
                 new_mq = []
                 for msg in mq:
-                    print "Dst: ", msg.dst, "User:", user
+                    # print "Dst: ", msg.dst, "User:", user
                     if msg.dst == user and msg.id not in message_delivered[user]:
                         message_delivery_count += 1
                         message_delivered[user].append(msg.id)
