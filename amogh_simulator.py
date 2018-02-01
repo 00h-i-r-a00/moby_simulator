@@ -74,11 +74,14 @@ def main():
             print "Simulating message exchange on all nodes that belong to a network."
             for tower in network_state_new.keys():
                 users_in_tower = network_state_new[tower]
-                dirty = perform_message_exchanges(users_in_tower)
-                if dirty:
-                    pass
-                    # print "Dirty node in this tower, adding all users!"
-                    # dirty_nodes += users_in_tower # This list is gonna have a lot of repetitions, but it's OK.
+                temp_dirty_bit = False
+                for user in users_in_tower:
+                    if user in dirty_nodes:
+                        temp_dirty_bit = True
+                        break
+                if temp_dirty_bit:
+                    perform_message_exchanges(users_in_tower)
+                    clean_users(users_in_tower)
             print "Messages for this hour sent, message exchanges complete. Perform destination check"
             for user, mq in message_queue.iteritems():
                 new_mq = []
@@ -95,23 +98,22 @@ def main():
             print "Updaing old state to new state."
             network_state_old = network_state_new
 
-def perform_message_exchanges(users):
+def clean_users(users):
     global dirty_nodes
-    dirty = False
-    for u1 in users:
-        if str(u1) in dirty_nodes:
-            dirty = True
-            for u2 in users:
-                if u1 != u2:
-                    # We have reached a state where message queue exchange needs to happen between u1 and u2
-                    # Right now, we have no policy checks for this, need to check and use trust scores here.
-                    mq12 = message_queue[u1] + message_queue[u2]
-                    message_queue[u1] = message_queue[u2] = []
-                    for m in mq12:
-                        if m not in message_queue[u1]:
-                            message_queue[u1].append(m)
-                            message_queue[u2].append(m)
-    return dirty
+    new_dirty = []
+    for node in dirty_nodes:
+        if node not in users:
+            new_dirty.append(node)
+    dirty_nodes = new_dirty
+
+def perform_message_exchanges(users):
+    mq = []
+    for u in users:
+        for m in message_queue[u]:
+            if m not in mq:
+                mq.append(m)
+    for u in users:
+        message_queue[u] = mq
 
 if __name__ == "__main__":
     main()
