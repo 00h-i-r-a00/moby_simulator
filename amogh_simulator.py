@@ -76,8 +76,9 @@ def main():
                 users_in_tower = network_state_new[tower]
                 dirty = perform_message_exchanges(users_in_tower)
                 if dirty:
+                    pass
                     # print "Dirty node in this tower, adding all users!"
-                    dirty_nodes += users_in_tower # This list is gonna have a lot of repetitions, but it's OK.
+                    # dirty_nodes += users_in_tower # This list is gonna have a lot of repetitions, but it's OK.
             print "Messages for this hour sent, message exchanges complete. Perform destination check"
             for user, mq in message_queue.iteritems():
                 new_mq = []
@@ -104,11 +105,12 @@ def perform_message_exchanges(users):
                 if u1 != u2:
                     # We have reached a state where message queue exchange needs to happen between u1 and u2
                     # Right now, we have no policy checks for this, need to check and use trust scores here.
-                    mq12 = set(message_queue[u1] + message_queue[u2])
+                    mq12 = message_queue[u1] + message_queue[u2]
                     message_queue[u1] = message_queue[u2] = []
                     for m in mq12:
-                        message_queue[u1].append(m)
-                        message_queue[u2].append(m)
+                        if m not in message_queue[u1]:
+                            message_queue[u1].append(m)
+                            message_queue[u2].append(m)
     return dirty
 
 if __name__ == "__main__":
