@@ -16,7 +16,7 @@ def main():
             for entry in data:
                 hour, tid, users = entry.strip().split(',')
                 if tid in towers:
-                    with open(str(i)+"_"+hour, "a+") as outfile:
+                    with open(str(i)+"_"+hour+".twr", "a+") as outfile:
                         outfile.write(entry)
             print "Done with ", days[i]
 
