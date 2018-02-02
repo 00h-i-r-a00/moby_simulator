@@ -61,7 +61,7 @@ def main():
                 for entry in data:
                     # ID, TTL, Source, Destination, hop, trust
                     id, ttl, src, dst, hop, trust = entry.strip().split(",")
-                    msg = Message(id, ttl, src, dst, hop, trust)
+                    msg = Message(id, int(ttl), src, dst, hop, trust)
                     message_queue[src].append(msg)
                     dirty_nodes.append(src)
             if not first_state:
@@ -90,7 +90,7 @@ def main():
                     if msg.dst == user and msg.id not in message_delivered[user]:
                         message_delivery_count += 1
                         message_delivered[user].append(msg.id)
-                        msg.ttl -= 60
+                        msg.ttl = 60
                     elif msg.ttl > 1:
                         msg.ttl -= 1
                     else:
