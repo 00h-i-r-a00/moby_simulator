@@ -72,7 +72,6 @@ def main():
                     dirty_nodes += transitions_added
             first_state = False
             print "Simulating message exchange on all nodes that belong to a network."
-            print "Dirty nodes: ", dirty_nodes
             for tower in network_state_new.keys():
                 users_in_tower = network_state_new[tower]
                 temp_dirty_bit = False
@@ -112,8 +111,8 @@ def perform_message_exchanges(users):
         for u2 in users:
             mq1 = message_queue[u1]
             mq2 = message_queue[u2]
-            mq1ids = [i[0] for i in mq1]
-            mq2ids = [i[0] for i in mq2]
+            mq1ids = [i.id for i in mq1]
+            mq2ids = [i.id for i in mq2]
             for i in xrange(0, len(mq2ids)):
                 if mq2ids[i] not in mq1ids:
                     mq1.append(mq2[i])
