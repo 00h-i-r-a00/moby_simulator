@@ -81,7 +81,6 @@ def main():
                         temp_dirty_bit = True
                         break
                 if temp_dirty_bit:
-                    print "dirty bit, calling mx for tower ", tower, len(dirty_nodes), len(users_in_tower)
                     perform_message_exchanges(users_in_tower)
                     clean_users(users_in_tower)
             print "Messages for this hour sent, message exchanges complete. Perform destination check"
@@ -109,7 +108,7 @@ def clean_users(users):
     dirty_nodes = new_dirty
 
 def perform_message_exchanges(users):
-    print "Exchange for: ", len(users)
+    # print "Exchange for: ", len(users)
     mq = []
     mqids = []
     for u in users:
@@ -119,7 +118,7 @@ def perform_message_exchanges(users):
                 mq.append(m)
     for u in users:
         message_queue[u] = mq
-    print "Resulting message queue length: ", len(mq)
+    # print "Resulting message queue length: ", len(mq)
 
 if __name__ == "__main__":
     main()
