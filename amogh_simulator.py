@@ -111,11 +111,12 @@ def clean_users(users):
 def perform_message_exchanges(users):
     print "Exchange for: ", len(users)
     mq = []
+    mqids = []
     for u in users:
-        if u in message_queue.keys():
-            for m in message_queue[u]:
-                if m not in mq:
-                    mq.append(m)
+        for m in message_queue[u]:
+            if m.id not in mqids:
+                mqids.append(m.id)
+                mq.append(m)
     for u in users:
         message_queue[u] = mq
     print "Resulting message queue length: ", len(mq)
