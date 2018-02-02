@@ -118,6 +118,7 @@ def perform_message_exchanges(users):
                     mq.append(m)
     for u in users:
         message_queue[u] = mq
+    print "Resulting message queue length: ", len(mq)
 
 if __name__ == "__main__":
     main()
