@@ -85,17 +85,16 @@ def main():
                     clean_users(users_in_tower)
             print "Messages for this hour sent, message exchanges complete. Perform destination check"
             for user, mq in message_queue.iteritems():
-                new_mq = []
                 for msg in mq:
                     # print "Dst: ", msg.dst, "User:", user
                     if msg.dst == user and msg.id not in message_delivered[user]:
                         message_delivery_count += 1
                         message_delivered[user].append(msg.id)
-                        msg = Message(msg.id, int(msg.ttl)-60, msg.src, msg.dst, int(msg.hop)+1, msg.trust)
+                        msg.ttl -= 60
                     elif msg.ttl > 1:
-                        msg = Message(msg.id, int(msg.ttl)-1, msg.src, msg.dst, int(msg.hop)+1, msg.trust)
-                    new_mq.append(msg)
-                message_queue[user] = new_mq
+                        msg.ttl -= 1
+                    else:
+                        message_queue[user].remove(msg)
             print "Updaing old state to new state."
             network_state_old = network_state_new
 
@@ -109,15 +108,19 @@ def clean_users(users):
 
 def perform_message_exchanges(users):
     # print "Exchange for: ", len(users)
-    mq = []
-    mqids = []
-    for u in users:
-        for m in message_queue[u]:
-            if m.id not in mqids:
-                mqids.append(m.id)
-                mq.append(m)
-    for u in users:
-        message_queue[u] = mq
+    for u1 in users:
+        for u2 in users:
+            mq1 = message_queue[u1]
+            mq2 = message_queue[u2]
+            mq1ids = [i[0] for i in mq1]
+            mq2ids = [i[0] for i in mq2]
+            for i in xrange(0, len(mq2ids)):
+                if mq2ids[i] not in mq1ids:
+                    mq1.append(mq2[i])
+                    # Any of the trust score changing logic should come here.
+            for i in xrange(0, len(mq1ids)):
+                if mq1ids[i] not in mq2ids:
+                    mq2.append(mq1[i])
     # print "Resulting message queue length: ", len(mq)
 
 if __name__ == "__main__":
