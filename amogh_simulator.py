@@ -72,7 +72,7 @@ def main():
                     dirty_nodes += transitions_added
             first_state = False
             print "Simulating message exchange on all nodes that belong to a network."
-            print "Number of dirty nodes: ", len(dirty_nodes)
+            print "Dirty nodes: ", dirty_nodes
             for tower in network_state_new.keys():
                 users_in_tower = network_state_new[tower]
                 temp_dirty_bit = False
@@ -81,6 +81,7 @@ def main():
                         temp_dirty_bit = True
                         break
                 if temp_dirty_bit:
+                    print "dirty bit, calling mx for tower ", tower, len(dirty_nodes), len(users_in_tower)
                     perform_message_exchanges(users_in_tower)
                     clean_users(users_in_tower)
             print "Messages for this hour sent, message exchanges complete. Perform destination check"
@@ -108,11 +109,13 @@ def clean_users(users):
     dirty_nodes = new_dirty
 
 def perform_message_exchanges(users):
+    print "Exchange for: ", len(users)
     mq = []
     for u in users:
-        for m in message_queue[u]:
-            if m not in mq:
-                mq.append(m)
+        if u in message_queue.keys():
+            for m in message_queue[u]:
+                if m not in mq:
+                    mq.append(m)
     for u in users:
         message_queue[u] = mq
 
