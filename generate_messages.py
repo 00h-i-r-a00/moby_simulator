@@ -5,7 +5,7 @@ DATA_FILE_PREFIX = "data/0/"
 DATA_FILE_FORMAT = ".twr"
 MESSAGE_FILE_FORMAT = ".msg"
 start_day = 0
-end_day = 1
+end_day = 3
 MESSAGES_TO_GENERATE = 100
 message_id_start = DATA_FILE_PREFIX
 
