@@ -28,16 +28,19 @@ def main():
     total_messages = 0
     global dirty_nodes
     global message_delivery_count
+    global network_state_new
+    global network_state_old
     for current_day in xrange(start_day, end_day):
         for current_hour in xrange(0,24):
             dirty_nodes = []
+            network_state_new = defaultdict(set)
             current_data_file = DATA_FILE_PREFIX + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
             current_message_file = DATA_FILE_PREFIX + str(current_day) + "_" + str(current_hour) + MESSAGE_FILE_FORMAT
             users_this_hour = []
             print "Message Delivery count: ", message_delivery_count, " of: ", total_messages
             if total_messages > 0:
                 print "Delivery rate: ", (float(message_delivery_count) / total_messages)*100, "%"
-            print "Processing hour: ", current_hour
+            print "Processing hour: ", current_hour, " File: ", current_data_file
             with open(current_data_file) as data:
                 for entry in data:
                     # Just calcuate this hours state, no modification to last hour.
