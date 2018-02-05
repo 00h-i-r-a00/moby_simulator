@@ -68,9 +68,8 @@ def main():
                     message_queue[src][msg.id] = msg
                     dirty_nodes.append(src)
                     total_messages += 1
+            changes_added = changes_removed = []
             if not first_state:
-                changes_added = []
-                changes_removed = []
                 for tower in network_state_new.keys():
                     # Nodes that are new to a tower need to trigger msg exchanges, ignore this for first run
                     # as the first run marks all of them as new!
