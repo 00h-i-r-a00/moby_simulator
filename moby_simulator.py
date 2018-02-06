@@ -7,6 +7,7 @@ MESSAGE_FILE_FORMAT = ".msg"
 
 start_day = 0
 end_day = 3
+cool_down = 12
 network_state_old = defaultdict(set)
 network_state_new = defaultdict(set)
 message_queue = defaultdict(dict)
@@ -30,8 +31,12 @@ def main():
     global message_delivery_count
     global network_state_new
     global network_state_old
+    read_message_counter = (end_day - start_day) * 24
+    read_message_counter -= cool_down
+    read_message_counter += 1
     for current_day in xrange(start_day, end_day):
         for current_hour in xrange(0,24):
+            read_message_counter -= 1
             dirty_nodes = []
             network_state_new = defaultdict(set)
             current_data_file = DATA_FILE_PREFIX + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
@@ -62,15 +67,16 @@ def main():
             print "Users seen this hour: ", len(set(users_this_hour))
             print "States updated. Sending a few messages around."
             # Parse the .msg file
-            print "Parsing: ", current_message_file
-            with open(current_message_file) as data:
-                for entry in data:
-                    # ID, TTL, Source, Destination, hop, trust
-                    id, ttl, src, dst, hop, trust = entry.strip().split(",")
-                    msg = Message(id, int(ttl), src, dst, hop, trust)
-                    message_queue[src][msg.id] = msg
-                    dirty_nodes.append(src)
-                    total_messages += 1
+            if read_message_counter > 0:
+                print "Parsing: ", current_message_file
+                with open(current_message_file) as data:
+                    for entry in data:
+                        # ID, TTL, Source, Destination, hop, trust
+                        id, ttl, src, dst, hop, trust = entry.strip().split(",")
+                        msg = Message(id, int(ttl), src, dst, hop, trust)
+                        message_queue[src][msg.id] = msg
+                        dirty_nodes.append(src)
+                        total_messages += 1
             changes_added = changes_removed = []
             if not first_state:
                 for tower in network_state_new.keys():
@@ -82,6 +88,7 @@ def main():
                     changes_removed += transitions_removed
                     dirty_nodes += transitions_added
             print "Network changes added: ", len(changes_added), " removed: ", len(changes_removed)
+            print "Total dirty nodes: ", len(dirty_nodes)
             first_state = False
             print "Simulating message exchange on all nodes that belong to a network."
             for tower in network_state_new.keys():
