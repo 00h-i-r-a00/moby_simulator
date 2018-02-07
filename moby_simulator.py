@@ -25,16 +25,16 @@ class Message:
 
 def main():
     parser = argparse.ArgumentParser(description='Moby simulation script.')
-    parser.add_argument('--start_day', help='start day of the year', type=int, nargs='?', default=0)
-    parser.add_argument('--end_day', help='end day of the year', type=int, nargs='?', default=3)
-    parser.add_argument('--city_number', help='city to run test for', type=int, nargs='?', default=0)
-    parser.add_argument('--cool_down', help='cool down hours', type=int, nargs='?', default=12)
+    parser.add_argument('--start-day', help='start day of the year', type=int, nargs='?', default=0)
+    parser.add_argument('--end-day', help='end day of the year', type=int, nargs='?', default=3)
+    parser.add_argument('--city-number', help='city to run test for', type=int, nargs='?', default=0)
+    parser.add_argument('--cool-down', help='cool down hours', type=int, nargs='?', default=12)
     args = parser.parse_args(sys.argv[1:])
     start_day = args.start_day
     end_day = args.end_day
     city_number = args.city_number
     cool_down = args.cool_down
-    print start_day, end_day, city_number, cool_down
+    print "Configuration (start, end, city, cooldown): ", start_day, end_day, city_number, cool_down
     first_state = True
     total_messages = 0
     global dirty_nodes
