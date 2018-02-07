@@ -4,15 +4,17 @@ import sys, random, argparse
 DATA_FILE_PREFIX = "data/"
 DATA_FILE_FORMAT = ".twr"
 MESSAGE_FILE_FORMAT = ".msg"
-start_day = 0
-end_day = 3
 message_id_start = DATA_FILE_PREFIX
 
 def main():
     parser = argparse.ArgumentParser(description='Moby message generation script script.')
     parser.add_argument('--number', help='Number of messages to generate', type=int, nargs='?', default=1000)
+    parser.add_argument('--start_day', help='start day of the year', type=int, nargs='?', default=0)
+    parser.add_argument('--end_day', help='end day of the year', type=int, nargs='?', default=3)
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
+    start_day = args.start_day
+    end_day = args.end_day
     for city in xrange(0, 4):
         for current_day in xrange(start_day, end_day):
             for current_hour in xrange(0,24):

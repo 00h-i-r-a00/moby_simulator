@@ -14,12 +14,6 @@ message_delivered = defaultdict(list)
 message_delivery_count = 0
 dirty_nodes = []
 
-# CLI args
-start_day = 0
-end_day = 3
-city_number = 0
-cool_down = 12
-
 class Message:
     def __init__(self, id, ttl, src, dst, hop, trust):
         self.id  = id
