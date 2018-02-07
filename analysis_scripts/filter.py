@@ -21,7 +21,7 @@ def main():
                 for entry in data:
                     hour, tid, users = entry.strip().split(',')
                     for j in xrange(0, 4):
-                        if tid in towers:
+                        if tid in towers_by_city[j]:
                             with open("data/"+str(j)+"/"+str(i)+"_"+hour+".twr", "a+") as outfile:
                                 outfile.write(entry)
                 print "Done with ", days[i]
