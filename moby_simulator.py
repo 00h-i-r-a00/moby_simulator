@@ -1,19 +1,24 @@
 #!/usr/bin/env python
 from collections import defaultdict
+import argparse
+import sys
 
-DATA_FILE_PREFIX = "data/0/"
+DATA_FILE_PREFIX = "data/"
 DATA_FILE_FORMAT = ".twr"
 MESSAGE_FILE_FORMAT = ".msg"
 
-start_day = 0
-end_day = 3
-cool_down = 12
 network_state_old = defaultdict(set)
 network_state_new = defaultdict(set)
 message_queue = defaultdict(dict)
 message_delivered = defaultdict(list)
 message_delivery_count = 0
 dirty_nodes = []
+
+# CLI args
+start_day = 0
+end_day = 3
+city_number = 0
+cool_down = 12
 
 class Message:
     def __init__(self, id, ttl, src, dst, hop, trust):
@@ -25,6 +30,17 @@ class Message:
         self.trust = trust
 
 def main():
+    parser = argparse.ArgumentParser(description='Moby simulation script.')
+    parser.add_argument('--start_day', help='start day of the year', type=int, nargs='?', default=0)
+    parser.add_argument('--end_day', help='end day of the year', type=int, nargs='?', default=3)
+    parser.add_argument('--city_number', help='city to run test for', type=int, nargs='?', default=0)
+    parser.add_argument('--cool_down', help='cool down hours', type=int, nargs='?', default=12)
+    args = parser.parse_args(sys.argv[1:])
+    start_day = args.start_day
+    end_day = args.end_day
+    city_number = args.city_number
+    cool_down = args.cool_down
+    print start_day, end_day, city_number, cool_down
     first_state = True
     total_messages = 0
     global dirty_nodes
@@ -39,8 +55,8 @@ def main():
             read_message_counter -= 1
             dirty_nodes = []
             network_state_new = defaultdict(set)
-            current_data_file = DATA_FILE_PREFIX + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
-            current_message_file = DATA_FILE_PREFIX + str(current_day) + "_" + str(current_hour) + MESSAGE_FILE_FORMAT
+            current_data_file = DATA_FILE_PREFIX + str(city_number) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
+            current_message_file = DATA_FILE_PREFIX + str(city_number) + "/" + str(current_day) + "_" + str(current_hour) + MESSAGE_FILE_FORMAT
             users_this_hour = []
             print "Message Delivery count: ", message_delivery_count, " of: ", total_messages
             if total_messages > 0:
