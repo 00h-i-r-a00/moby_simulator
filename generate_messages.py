@@ -22,7 +22,7 @@ def main():
     start_day = args.start_day
     end_day = args.end_day
     timestamp = args.timestamp
-    city = args.city
+    city = args.city_number
     threshold = args.threshold
     print "Configuration (start, end, number): ", start_day, end_day, number_of_messages
     for current_day in xrange(start_day, end_day):
