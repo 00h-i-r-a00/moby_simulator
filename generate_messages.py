@@ -15,7 +15,7 @@ def main():
     parser.add_argument('--start-day', help='start day of the year', type=int, nargs='?', default=0)
     parser.add_argument('--end-day', help='end day of the year', type=int, nargs='?', default=3)
     parser.add_argument('--timestamp', help='Timestamp to mark logging with', type=int, nargs='?', default=0)
-    parser.add_argument('--city', help='City to generate messages for', type=int, nargs='?', default=0)
+    parser.add_argument('--city-number', help='City to generate messages for', type=int, nargs='?', default=0)
     parser.add_argument('--threshold', help='Minimum occourances to be considered a legit user', type=int, nargs='?', default=0)
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
