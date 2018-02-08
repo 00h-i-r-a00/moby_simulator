@@ -4,8 +4,11 @@ import argparse
 import sys
 
 DATA_FILE_PREFIX = "data/"
+SEED_FILE_PREFIX = "data/seeds/"
+RESULT_FILE_PREFIX = "data/results/"
 DATA_FILE_FORMAT = ".twr"
 MESSAGE_FILE_FORMAT = ".msg"
+RESULT_FILE_FORMAT = ".csv"
 
 network_state_old = defaultdict(set)
 network_state_new = defaultdict(set)
@@ -28,33 +31,39 @@ def main():
     parser.add_argument('--start-day', help='start day of the year', type=int, nargs='?', default=0)
     parser.add_argument('--end-day', help='end day of the year', type=int, nargs='?', default=3)
     parser.add_argument('--city-number', help='city to run test for', type=int, nargs='?', default=0)
-    parser.add_argument('--cool-down', help='cool down hours', type=int, nargs='?', default=12)
+    parser.add_argument('--timestamp', help='Timestamp to mark logging with', type=int, nargs='?', default=0)
     args = parser.parse_args(sys.argv[1:])
     start_day = args.start_day
     end_day = args.end_day
     city_number = args.city_number
-    cool_down = args.cool_down
-    print "Configuration (start, end, city, cooldown): ", start_day, end_day, city_number, cool_down
+    timestamp = args.timestamp
+    print "Configuration (start, end, city, timestamp): ", start_day, end_day, city_number, timestamp
     first_state = True
     total_messages = 0
     global dirty_nodes
     global message_delivery_count
     global network_state_new
     global network_state_old
-    read_message_counter = (end_day - start_day) * 24
-    read_message_counter -= cool_down
-    read_message_counter += 1
+    dirty_nodes = []
+    message_seed_file = SEED_FILE_PREFIX + str(start_day) + "_" + str(end_day) + "_" + str(timestamp) + MESSAGE_FILE_FORMAT
+    result_file = RESULT_FILE_PREFIX + str(start_day) + "_" + str(end_day) + "_" + str(timestamp) + RESULT_FILE_FORMAT
+    # Parse the .msg file
+    print "Parsing messages from seed: ", message_seed_file
+    with open(message_seed_file) as data:
+        for entry in data:
+            # ID, TTL, Source, Destination, hop, trust
+            id, ttl, src, dst, hop, trust = entry.strip().split(",")
+            msg = Message(id, int(ttl), src, dst, hop, trust)
+            message_queue[src][msg.id] = msg
+            dirty_nodes.append(src)
+            total_messages += 1
     for current_day in xrange(start_day, end_day):
         for current_hour in xrange(0,24):
-            read_message_counter -= 1
-            dirty_nodes = []
             network_state_new = defaultdict(set)
             current_data_file = DATA_FILE_PREFIX + str(city_number) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
-            current_message_file = DATA_FILE_PREFIX + str(city_number) + "/" + str(current_day) + "_" + str(current_hour) + MESSAGE_FILE_FORMAT
             users_this_hour = []
             print "Message Delivery count: ", message_delivery_count, " of: ", total_messages
-            if total_messages > 0:
-                print "Delivery rate: ", (float(message_delivery_count) / total_messages)*100, "%"
+            print "Delivery rate: ", (float(message_delivery_count) / total_messages)*100, "%"
             print "Processing hour: ", current_hour, " File: ", current_data_file
             with open(current_data_file) as data:
                 for entry in data:
@@ -74,19 +83,8 @@ def main():
                 # print "Added: ", transitions_added
                 # print "Removed: ", transitions_removed
             print "Users in all towers(double counted):", len(users_this_hour)
-            print "Users seen this hour: ", len(set(users_this_hour))
-            print "States updated. Sending a few messages around."
-            # Parse the .msg file
-            if read_message_counter > 0:
-                print "Parsing: ", current_message_file
-                with open(current_message_file) as data:
-                    for entry in data:
-                        # ID, TTL, Source, Destination, hop, trust
-                        id, ttl, src, dst, hop, trust = entry.strip().split(",")
-                        msg = Message(id, int(ttl), src, dst, hop, trust)
-                        message_queue[src][msg.id] = msg
-                        dirty_nodes.append(src)
-                        total_messages += 1
+            users_this_hour = set(users_this_hour)
+            print "Users seen this hour: ", len(users_this_hour)
             changes_added = changes_removed = []
             if not first_state:
                 for tower in network_state_new.keys():
@@ -124,6 +122,18 @@ def main():
             print "Updaing old state to new state."
             for key, value in network_state_new.iteritems():
                 network_state_old[key] = value
+            dirty_nodes = []
+            with open(result_file, "a+") as out_file:
+                dlim = ','
+                out_file.write(getline(current_day, current_hour, len(users_this_hour), len(dirty_nodes), message_delivery_count, total_messages))
+                out_file.write("\n")
+
+def getline(*args):
+    retstr = str(args[0])
+    dlim = ','
+    for i in args[1:]:
+        retstr = retstr + dlim + str(i)
+    return retstr
 
 def clean_users(users):
     global dirty_nodes
