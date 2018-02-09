@@ -45,7 +45,7 @@ def main():
     for u in dellist:
         del userpool[u]
     print "Users above threshold: ", len(userpool)
-    current_message_file = SEED_FILE_PREFIX + str(start_day) + "_" + str(end_day) + "_" + str(timestamp) + MESSAGE_FILE_FORMAT
+    current_message_file = SEED_FILE_PREFIX + str(start_day) + "_" + str(end_day) + "_" + str(city) + "_" + str(timestamp) + MESSAGE_FILE_FORMAT
     print "Generating: ", current_message_file
     # ID, TTL, Source, Destination, hop, trust
     with open(current_message_file, "a+") as out_file:
