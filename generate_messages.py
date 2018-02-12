@@ -13,7 +13,7 @@ def main():
     parser = argparse.ArgumentParser(description='Moby message generation script script.')
     parser.add_argument('--number', help='Number of messages to generate', type=int, nargs='?', default=1000)
     parser.add_argument('--start-day', help='start day of the year', type=int, nargs='?', default=0)
-    parser.add_argument('--end-day', help='end day of the year', type=int, nargs='?', default=3)
+    parser.add_argument('--end-day', help='end day of the year', type=int, nargs='?', default=None)
     parser.add_argument('--timestamp', help='Timestamp to mark logging with', type=int, nargs='?', default=0)
     parser.add_argument('--city-number', help='City to generate messages for', type=int, nargs='?', default=0)
     parser.add_argument('--threshold', help='Minimum occourances to be considered a legit user', type=int, nargs='?', default=0)
@@ -22,6 +22,8 @@ def main():
     number_of_messages = args.number
     start_day = args.start_day
     end_day = args.end_day
+    if end_day is None:
+        end_day = start_day + 3
     timestamp = args.timestamp
     city = args.city_number
     cooldown =  args.cooldown
