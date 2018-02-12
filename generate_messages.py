@@ -23,8 +23,8 @@ def main():
     end_day = args.end_day
     timestamp = args.timestamp
     city = args.city_number
-    threshold = args.threshold
-    print "Configuration (start, end, number): ", start_day, end_day, number_of_messages
+    threshold = 24 * (end_day - start_day)
+    print "Configuration (start, end, number, timestamp, city, threshold): ", start_day, end_day, number_of_messages, timestamp, city, threshold
     for current_day in xrange(start_day, end_day):
         for current_hour in xrange(0,24):
             current_data_file = DATA_FILE_PREFIX + str(city) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
@@ -42,10 +42,16 @@ def main():
         if value <= threshold:
             dellist.append(key)
     print "Total users seen: ", len(userpool)
+    allusers = userpool
     for u in dellist:
         del userpool[u]
     print "Users above threshold: ", len(userpool)
     current_message_file = SEED_FILE_PREFIX + str(start_day) + "_" + str(end_day) + "_" + str(city) + "_" + str(timestamp) + MESSAGE_FILE_FORMAT
+    with open(current_message_file, "w+") as out_file:
+        out_file.write(str(len(allusers)) + "," + str(len(userpool)))
+        for u in userpool.iterkeys():
+            out_file.write("," + u)
+        out_file.write("\n")
     print "Generating: ", current_message_file
     # ID, TTL, Source, Destination, hop, trust
     with open(current_message_file, "a+") as out_file:
