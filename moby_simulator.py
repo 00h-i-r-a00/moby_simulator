@@ -45,7 +45,7 @@ def main():
     global network_state_new
     global network_state_old
     dirty_nodes = []
-    message_seed_file = SEED_FILE_PREFIX + str(start_day) + "_" + str(end_day) + "_" + str(city) + "_" + str(timestamp) + MESSAGE_FILE_FORMAT
+    message_seed_file = SEED_FILE_PREFIX + str(start_day) + "_" + str(end_day) + "_" + str(city_number) + "_" + str(timestamp) + MESSAGE_FILE_FORMAT
     result_file = RESULT_FILE_PREFIX + str(start_day) + "_" + str(end_day) + "_" + str(timestamp) + RESULT_FILE_FORMAT
     # Parse the .msg file
     print "Parsing messages from seed: ", message_seed_file
