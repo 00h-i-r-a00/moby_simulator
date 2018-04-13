@@ -87,11 +87,11 @@ def main():
 def get_message_distribution(sending_hours, total_messages):
     dictionary = {}
     # Uniform distrbution for now.
-    # This function ends up sending a multiple of sending_hours number of messages
-    # and not really total_messages.
-    # TODO: FIX THIS.
+    overflow = total_messages % sending_hours
     for i in xrange(0, sending_hours):
         dictionary[i] = total_messages / sending_hours
+    for i in xrange(0, overflow):
+        dictionary[i] += 1
     return dictionary
 
 def getline(*args):
