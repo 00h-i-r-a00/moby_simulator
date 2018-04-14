@@ -4,10 +4,10 @@ import argparse
 import sys
 
 DATA_FILE_PREFIX = "data/"
-SEED_FILE_PREFIX = "data/seeds/"
+CONFIG_FILE_PREFIX = "data/seeds/"
 RESULT_FILE_PREFIX = "data/results/"
 DATA_FILE_FORMAT = ".twr"
-MESSAGE_FILE_FORMAT = ".msg"
+CONFIG_FILE_FORMAT = ".config"
 RESULT_FILE_FORMAT = ".csv"
 
 network_state_old = defaultdict(set)
@@ -28,16 +28,10 @@ class Message:
 
 def main():
     parser = argparse.ArgumentParser(description='Moby simulation script.')
-    parser.add_argument('--start-day', help='start day of the year', type=int, nargs='?', default=0)
-    parser.add_argument('--end-day', help='end day of the year', type=int, nargs='?', default=3)
-    parser.add_argument('--city-number', help='city to run test for', type=int, nargs='?', default=0)
-    parser.add_argument('--timestamp', help='Timestamp to mark logging with', type=int, nargs='?', default=0)
+    parser.add_argument('--configuration', help='Configuration to use for the simulation', type=int, nargs='?', default=0)
     args = parser.parse_args(sys.argv[1:])
-    start_day = args.start_day
-    end_day = args.end_day
-    city_number = args.city_number
-    timestamp = args.timestamp
-    print "Configuration (start, end, city, timestamp): ", start_day, end_day, city_number, timestamp
+    configuration = args.configuration
+    print "Configuration file: ", configuration
     first_state = True
     total_messages = 0
     global dirty_nodes
@@ -45,18 +39,25 @@ def main():
     global network_state_new
     global network_state_old
     dirty_nodes = []
-    message_seed_file = SEED_FILE_PREFIX + str(start_day) + "_" + str(end_day) + "_" + str(city_number) + "_" + str(timestamp) + MESSAGE_FILE_FORMAT
-    result_file = RESULT_FILE_PREFIX + str(start_day) + "_" + str(end_day) + "_" + str(timestamp) + RESULT_FILE_FORMAT
-    # Parse the .msg file
-    print "Parsing messages from seed: ", message_seed_file
-    with open(message_seed_file) as data:
-        for entry in data:
-            # ID, TTL, Source, Destination, hop, trust
-            id, ttl, src, dst, hop, trust = entry.strip().split(",")
-            msg = Message(id, int(ttl), src, dst, hop, trust)
-            message_queue[src][msg.id] = msg
-            dirty_nodes.append(src)
-            total_messages += 1
+    configuration_file = CONFIG_FILE_PREFIX + str(configuration) + CONFIG_FILE_FORMAT
+    result_file = RESULT_FILE_PREFIX + str(configuration) + RESULT_FILE_FORMAT
+    # Parse the .config file
+    print "Parsing configuration and messages from seed: ", configuration_file
+    data = open(configuration_file)
+    allusers, userpool = data.readline().strip().split(",")
+    usermap = data.readline().strip()
+    city_number = int(data.readline().strip())
+    start_day = int(data.readline().strip())
+    end_day = int(data.readline().strip())
+    for entry in data:
+        # print entry
+        # ID, TTL, Source, Destination, hop, trust
+        hour, id, ttl, src, dst, hop, trust = entry.strip().split(",")
+        msg = Message(id, int(ttl), src, dst, hop, trust)
+        message_queue[src][msg.id] = msg
+        dirty_nodes.append(src)
+        total_messages += 1
+
     for current_day in xrange(start_day, end_day):
         for current_hour in xrange(0,24):
             network_state_new = defaultdict(set)
