@@ -28,6 +28,7 @@ class Message:
         self.trust = trust
 
 def main():
+
     parser = argparse.ArgumentParser(description='Moby simulation script.')
     parser.add_argument('--configuration', help='Configuration to use for the simulation', type=int, nargs='?', default=0)
     args = parser.parse_args(sys.argv[1:])
@@ -50,6 +51,8 @@ def main():
     city_number = int(data.readline().strip())
     start_day = int(data.readline().strip())
     end_day = int(data.readline().strip())
+    seed = int(data.readline().strip())
+    
     for entry in data:
         # print entry
         # ID, TTL, Source, Destination, hop, trust
