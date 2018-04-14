@@ -13,6 +13,7 @@ RESULT_FILE_FORMAT = ".csv"
 network_state_old = defaultdict(set)
 network_state_new = defaultdict(set)
 message_queue = defaultdict(dict)
+message_queue_map = defaultdict(list)
 message_delivered = defaultdict(list)
 message_delivery_count = 0
 dirty_nodes = []
@@ -54,17 +55,15 @@ def main():
         # ID, TTL, Source, Destination, hop, trust
         hour, id, ttl, src, dst, hop, trust = entry.strip().split(",")
         msg = Message(id, int(ttl), src, dst, hop, trust)
-        message_queue[src][msg.id] = msg
-        dirty_nodes.append(src)
-        total_messages += 1
-
+        message_queue_map[int(hour)].append(msg)
     for current_day in xrange(start_day, end_day):
         for current_hour in xrange(0,24):
             network_state_new = defaultdict(set)
             current_data_file = DATA_FILE_PREFIX + str(city_number) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
             users_this_hour = []
-            print "Message Delivery count: ", message_delivery_count, " of: ", total_messages
-            print "Delivery rate: ", (float(message_delivery_count) / total_messages)*100, "%"
+            if not first_state:
+                print "Message Delivery count: ", message_delivery_count, " of: ", total_messages
+                print "Delivery rate: ", (float(message_delivery_count) / total_messages)*100, "%"
             print "Processing hour: ", current_hour, " File: ", current_data_file
             with open(current_data_file) as data:
                 for entry in data:
@@ -84,6 +83,11 @@ def main():
                 # print "Added: ", transitions_added
                 # print "Removed: ", transitions_removed
             print "Users in all towers(double counted):", len(users_this_hour)
+            message_hour = current_hour + (24 * (current_day - start_day))
+            for msg in message_queue_map[message_hour]:
+                message_queue[msg.src][msg.id] = msg
+                dirty_nodes.append(msg.src)
+                total_messages += 1
             users_this_hour = set(users_this_hour)
             print "Users seen this hour: ", len(users_this_hour)
             changes_added = changes_removed = []
