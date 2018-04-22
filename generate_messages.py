@@ -14,7 +14,7 @@ def main():
     parser.add_argument('--number', help='Number of messages to generate', type=int, nargs='?', default=1000)
     parser.add_argument('--start-day', help='start day of the year', type=int, nargs='?', default=0)
     parser.add_argument('--end-day', help='end day of the year', type=int, nargs='?', default=None)
-    parser.add_argument('--configuration', help='Configuration and message file id', type=int, nargs='?', default=0)
+    parser.add_argument('--configuration', help='Configuration and message file id', type=str, nargs='?', default=0)
     parser.add_argument('--city-number', help='City to generate messages for', type=int, nargs='?', default=0)
     parser.add_argument('--threshold', help='Minimum occourances to be considered a legit user', type=int, nargs='?', default=0)
     parser.add_argument('--cooldown', help='Cooldown hours, messages distributed over total hours - cooldown hours.', type=int, nargs='?', default=12)

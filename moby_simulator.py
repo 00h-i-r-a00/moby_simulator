@@ -29,7 +29,7 @@ class Message:
 
 def main():
     parser = argparse.ArgumentParser(description='Moby simulation script.')
-    parser.add_argument('--configuration', help='Configuration to use for the simulation', type=int, nargs='?', default=0)
+    parser.add_argument('--configuration', help='Configuration to use for the simulation', type=str, nargs='?', default=0)
     args = parser.parse_args(sys.argv[1:])
     configuration = args.configuration
     print "Configuration file: ", configuration
