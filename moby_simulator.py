@@ -5,9 +5,9 @@ import sys
 import os
 import subprocess
 
-DATA_FILE_PREFIX = "data/"
-CONFIG_FILE_PREFIX = "data/seeds/"
-RESULT_FILE_PREFIX = "data/results/"
+DATA_FILE_PREFIX = "data2/"
+CONFIG_FILE_PREFIX = "data2/seeds/"
+RESULT_FILE_PREFIX = "data2/results/"
 
 ##create results folder if does not exists
 
@@ -43,22 +43,34 @@ def main():
 	parser.add_argument('--configuration', help='Configuration to use for the simulation', type=int, nargs='?', default=0)
 	parser.add_argument('--queuesize', help='Queue Size', type=int, nargs='?', default=None)
 	parser.add_argument('--usequeue', help='With or without queue. If the flag is set, choose a queue size', action='store_true')
+	parser.add_argument('--deliveryratiotype', type=int, help='1 if delivery ratio measured in terms of total messages uptil that hour 2. otherwise', default=1, nargs='?')
+	parser.add_argument('--outputfoldername', type=str, help='Name of the output folder', nargs='?', default='results_folder')
 
 	args = parser.parse_args(sys.argv[1:])
 	configuration = args.configuration
 	queuesize = int(args.queuesize) if args.queuesize else None
 	usequeue = args.usequeue
+	deliveryratiotype = int(args.deliveryratiotype)
+
+	##creating output folder
+
+	folder = str(args.outputfoldername)
+	cmd = 'mkdir ' + os.getcwd() + '/' + RESULT_FILE_PREFIX + folder
+	subprocess.call(cmd, shell=True)
+
 	print "Configuration file: ", configuration
 	first_state = True
 
 	total_messages = 0
+	total_messages2 = 0
+
 	global dirty_nodes
 	global message_delivery_count
 	global network_state_new
 	global network_state_old
 	dirty_nodes = []
 	configuration_file = CONFIG_FILE_PREFIX + str(configuration) + CONFIG_FILE_FORMAT
-	result_file = RESULT_FILE_PREFIX + str(configuration) + RESULT_FILE_FORMAT
+	result_file = RESULT_FILE_PREFIX + folder + '/' + str(configuration) + RESULT_FILE_FORMAT
 	# Parse the .config file
 	print "Parsing configuration and messages from seed: ", configuration_file
 	data = open(configuration_file)
@@ -67,9 +79,9 @@ def main():
 	city_number = int(data.readline().strip())
 	start_day = int(data.readline().strip())
 	end_day = int(data.readline().strip())
-	seed = int(data.readline().strip())
+        seed = int(data.readline().strip())
 
-        result_file_queue_occupancy = os.getcwd() + '/' + RESULT_FILE_PREFIX + '/' +  "queue_occupancy_" + str(start_day) + "_" + str(end_day) + "_initialseed" + str(seed) + "_queuesize" + str(queuesize) + RESULT_FILE_FORMAT
+        result_file_queue_occupancy = RESULT_FILE_PREFIX + folder + "/queue_occupancy_" + str(start_day) + "_" + str(end_day) + "_initialseed" + str(seed) + "_queuesize" + str(queuesize) + RESULT_FILE_FORMAT
 
 	for entry in data:
 		# print entry
@@ -77,14 +89,16 @@ def main():
 		hour, id, ttl, src, dst, hop, trust = entry.strip().split(",")
 		msg = Message(id, int(ttl), src, dst, hop, trust)
 		message_queue_map[int(hour)].append(msg)
+		total_messages2 += 1
+
 	for current_day in xrange(start_day, end_day):
 		for current_hour in xrange(0,24):
 			network_state_new = defaultdict(set)
 			current_data_file = DATA_FILE_PREFIX + str(city_number) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
 			users_this_hour = []
 			if not first_state:
-				print "Message Delivery count: ", message_delivery_count, " of: ", total_messages
-				print "Delivery rate: ", (float(message_delivery_count) / total_messages)*100, "%"
+				print "Message Delivery count: ", message_delivery_count, " of: ", total_messages if deliveryratiotype == 1 else total_messages2
+				print "Delivery rate: ", (float(message_delivery_count) / total_messages)*100 if deliveryratiotype == 1 else (float(message_delivery_count) / total_messages2)*100, "%"
 			print "Processing hour: ", current_hour, " File: ", current_data_file
 			with open(current_data_file) as data:
 				for entry in data:
@@ -158,7 +172,12 @@ def main():
 			dirty_nodes = []
 			with open(result_file, "a+") as out_file:
 				dlim = ','
-				out_file.write(getline(current_day, current_hour, len(users_this_hour), len(dirty_nodes), message_delivery_count, total_messages))
+				if deliveryratiotype == 1:
+					totmessages = total_messages
+				else:
+					totmessages = total_messages2
+
+				out_file.write(getline(current_day, current_hour, len(users_this_hour), len(dirty_nodes), message_delivery_count, totmessages))
 				out_file.write("\n")
 
 	with open(result_file_queue_occupancy, "w") as outfile:
