@@ -1,6 +1,6 @@
 #!/bin/bash
 
-queuesizes=('900' '1000' '1100')
+queuesizes=('100' '200' '300' '400' '500' '600' '700' '800' '900' '1000' '1100')
 #message_generation_types=(1 2)
 #for i in "${message_generation_types[@]}"
 #do
