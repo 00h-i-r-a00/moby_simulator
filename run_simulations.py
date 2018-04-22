@@ -17,7 +17,7 @@ def main():
         os.system(msg_gen_string)
         print cnf
         cnf_id = str(cnf["configuration"])
-        os.system("nohup ./moby_simulator.py --configuration " + cnf_id + " > "+ cnf_id+".nohup" +"&")
+        os.system("nohup ./moby_simulator.py --configuration " + cnf_id + " > data/logs/"+ cnf_id+".nohup" +"&")
 
 if __name__ == "__main__":
     main()
