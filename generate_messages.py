@@ -18,6 +18,7 @@ def main():
     parser.add_argument('--city-number', help='City to generate messages for', type=int, nargs='?', default=0)
     parser.add_argument('--threshold', help='Minimum occourances to be considered a legit user', type=int, nargs='?', default=0)
     parser.add_argument('--cooldown', help='Cooldown hours, messages distributed over total hours - cooldown hours.', type=int, nargs='?', default=12)
+    parser.add_argument('--ttl', help='The time to live to be used for the messages', type=int, nargs='?', default=72)
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
     start_day = args.start_day
@@ -28,6 +29,7 @@ def main():
     city = args.city_number
     cooldown =  args.cooldown
     threshold = args.threshold
+    time_to_live = args.ttl
     message_sending_hours = ((end_day - start_day) * 24) - cooldown
     print message_sending_hours
     print "Configuration (configuration, start, end, number, city, threshold, sending hours): ", configuration, start_day, end_day, number_of_messages, city, threshold, message_sending_hours
@@ -78,7 +80,7 @@ def main():
                 src, dst = random.sample(userpool.keys(), 2)
                 src = str(src)
                 dst = str(dst)
-                ttl = "72"
+                ttl = str(time_to_live)
                 hop = "0"
                 trust = "1"
                 out_file.write(getline(hour, id, ttl, src, dst, hop, trust))
