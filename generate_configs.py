@@ -41,7 +41,7 @@ def main():
                                 json.dump(config, outfile)
 
     print config_ctr, "Uploading configs."
-    os.system("scp achtung*.json achtung:")
+    os.system("scp achtung*.json achtung:moby_simulator/")
 
 if __name__ == "__main__":
     main()
