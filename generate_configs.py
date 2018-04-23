@@ -2,6 +2,7 @@
 import json
 import itertools
 import os
+import os.path
 
 achtungs = ["achtung02", "achtung03", "achtung04", "achtung05", "achtung06", "achtung07", "achtung12", "achtung13", "achtung14", "achtung15", "achtung16", "achtung17"]
 achtungpool = itertools.cycle(achtungs)
@@ -20,7 +21,8 @@ def main():
     total_configs = len(ttls) * len(start_days) * len(number_of_days) * len(cities) * len(cooldowns)
     print "Cleaning current config files."
     for f in achtungs:
-        os.remove(f+".json")
+        if os.path.isfile(os.getcwd() + '/' + f + '.json'):
+            os.remove(f+".json")
     for val_ttl in ttls:
         for val_start in start_days:
             for val_nod in number_of_days:
