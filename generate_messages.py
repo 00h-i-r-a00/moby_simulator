@@ -19,6 +19,9 @@ def main():
     parser.add_argument('--threshold', help='Minimum occourances to be considered a legit user', type=int, nargs='?', default=0)
     parser.add_argument('--cooldown', help='Cooldown hours, messages distributed over total hours - cooldown hours.', type=int, nargs='?', default=12)
     parser.add_argument('--ttl', help='The time to live to be used for the messages', type=int, nargs='?', default=72)
+    parser.add_argument('--seed', help='Number to use for random seeding', type=int, nargs='?', default=3007052)
+    parser.add_argument('--percentagehoursactive', help='Percentage of hours the destinations stay active', type=int, nargs='?', default=10)
+    parser.add_argument('--messagegenerationtype', help='Original Criteria or Selectively changing sources and destinations',      type=int, nargs='?', default=1)
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
     start_day = args.start_day
@@ -30,6 +33,9 @@ def main():
     cooldown =  args.cooldown
     threshold = args.threshold
     time_to_live = args.ttl
+    seed = args.seed
+    percentage_hours_active = args.percentagehoursactive
+    message_generation_type = args.messagegenerationtype
     message_sending_hours = ((end_day - start_day) * 24) - cooldown
     print message_sending_hours
     print "Configuration (configuration, start, end, number, city, threshold, sending hours): ", configuration, start_day, end_day, number_of_messages, city, threshold, message_sending_hours
@@ -61,6 +67,7 @@ def main():
 # City number
 # Start day
 # End day
+# Seed
     with open(current_message_file, "w+") as out_file:
         out_file.write(str(len(allusers)) + "," + str(len(userpool)))
         out_file.write("\n")
@@ -70,6 +77,7 @@ def main():
         out_file.write(str(city) + "\n")
         out_file.write(str(start_day) + "\n")
         out_file.write(str(end_day) + "\n")
+        out_file.write(str(seed) + "\n")
     print "Generating: ", current_message_file
     distribution = get_message_distribution(message_sending_hours, number_of_messages)
     # ID, TTL, Source, Destination, hop, trust
