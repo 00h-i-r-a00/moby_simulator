@@ -7,14 +7,14 @@ do
     for pid in `pgrep -f moby_simulator.py`
     do
         echo "Killing process: "
-        echo '$pid'
+        echo $pid
         `kill -9 $pid`
     done
 
     for pid in `pgrep -f generate_messages.py`
     do
         echo "Killing process: "
-        echo `$pid`
+        echo $pid
         `kill -9 $pid`
     done
     let "finish++"
