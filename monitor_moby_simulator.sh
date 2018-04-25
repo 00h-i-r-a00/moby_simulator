@@ -2,7 +2,7 @@
 
 monitoring_filename=$1
 
-while sleep 1s
+while sleep 5s
 do
     sum_mem=0
     sum_cpu=0
