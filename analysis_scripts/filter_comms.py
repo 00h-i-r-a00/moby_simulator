@@ -1,13 +1,11 @@
 #!/usr/bin/env python
-import sys
-
+import sys, pandas
 
 days_of_the_year = [d.strftime('%Y%m%d') for d in pandas.date_range('20090101','20091231')]
 COMMS_PREFIX = "nb_communications_per_tower_per_user_per_hour_"
 COMMS_EXT = ".csv.bz2.csv"
 
 def main():
-    print "Writing day", day
     towers_by_city = []
     for i in xrange(0, 4):
         towers = []
