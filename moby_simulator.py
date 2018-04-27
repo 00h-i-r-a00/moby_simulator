@@ -128,11 +128,11 @@ def main():
             print "Updaing old state to new state."
             for key, value in network_state_new.iteritems():
                 network_state_old[key] = value
-            dirty_nodes = []
             with open(result_file, "a+") as out_file:
                 dlim = ','
                 out_file.write(getline(current_day, current_hour, len(users_this_hour), len(dirty_nodes), message_delivery_count, total_messages))
                 out_file.write("\n")
+            dirty_nodes = []
 
 def getline(*args):
     retstr = str(args[0])
