@@ -2,58 +2,119 @@
 import sys, pandas
 import matplotlib.pyplot as plt
 
-days_of_the_year = [d.strftime('%Y%m%d') for d in pandas.date_range('20090101','20090112')]
+start_day = '20090101'
+end_day = '20090201'
+days_of_the_year = [d.strftime('%Y%m%d') for d in pandas.date_range('20090101','20090201')]
+days_to_plot = [d.strftime('%m%d') for d in pandas.date_range('20090101','20090201')]
 COMMS_EXT = ".comms"
 
 def main():
     towerlens = []
+    towerlensagg = []
     userlens = []
+    userlensagg = []
     calls = []
+    callsagg = []
     smss = []
+    smssagg = []
     for day in days_of_the_year:
         commsfile = str(day) + COMMS_EXT
         tower_set = set()
+        tower_set_aggrigate = set()
         user_set = set()
+        user_set_aggrigate = set()
         call_ctr = 0
+        call_ctr_aggrigate = 0
         sms_ctr = 0
+        sms_ctr_aggrigate = 0
         with open(commsfile) as infile:
+            hour_old = 0
             for entry in infile:
                 hour, tid, user, call, sms = entry.strip().split(',')
-                tower_set.add(tid)
-                user_set.add(user)
-                call_ctr += int(call)
-                sms_ctr += int(sms)
-        towerlens.append(len(tower_set))
-        userlens.append(len(user_set))
-        calls.append(call_ctr)
-        smss.append(sms_ctr)
-        print "towers, users, calls, sms", len(tower_set), len(user_set), call_ctr, sms_ctr
-    print "Plotting", towerlens, userlens, calls, smss
-
+                tower_set_aggrigate.add(tid)
+                user_set_aggrigate.add(user)
+                call_ctr_aggrigate += int(call)
+                sms_ctr_aggrigate += int(sms)
+                if hour_old == int(hour):
+                    tower_set.add(tid)
+                    user_set.add(user)
+                    call_ctr += int(call)
+                    sms_ctr += int(sms)
+                else:
+                    hour_old = int(hour)
+                    towerlens.append(len(tower_set))
+                    userlens.append(len(user_set))
+                    calls.append(call_ctr)
+                    smss.append(sms_ctr)
+            towerlensagg.append(len(tower_set_aggrigate))
+            userlensagg.append(len(user_set_aggrigate))
+            callsagg.append(call_ctr_aggrigate)
+            smssagg.append(sms_ctr_aggrigate)
+    print "Plotting"
     plt.figure(1)
+    plt.style.use('ggplot')
 
+    plt.title("Number of towers seen over the days of January.")
     plt.xlabel("Days")
+    plt.ylabel("Number of Towers seen.")
+    plt.plot(days_to_plot, towerlensagg, marker='o')
+    plt.xticks(rotation=45)
+    plt.grid()
+    plt.show()
+
+    plt.title("Number of users seen corresponding to all towers seen over the days of January.")
+    plt.xlabel("Days")
+    plt.ylabel("Number of Users seen.")
+    plt.plot(days_to_plot, userlensagg, marker='o')
+    plt.xticks(rotation=45)
+    plt.grid()
+    plt.show()
+
+    plt.title("Number of calls made by all users among all towers over the days of January.")
+    plt.xlabel("Days")
+    plt.ylabel("Number of Calls made in all towers.")
+    plt.plot(days_to_plot, callsagg, marker='o')
+    plt.xticks(rotation=45)
+    plt.grid()
+    plt.show()
+
+    plt.title("Number of text messages sent by all users in all towers over the days of January.")
+    plt.xlabel("Days")
+    plt.ylabel("Number of SMSs sent in all towers.")
+    plt.plot(days_to_plot, smssagg, marker='o')
+    plt.xticks(rotation=45)
+    plt.grid()
+    plt.show()
+
+    plt.title("Number of towers seen over the hours of January.")
+    plt.xlabel("Hours")
     plt.ylabel("Number of Towers seen.")
     xaxis = [i for i in xrange(len(towerlens))]
     plt.plot(xaxis, towerlens, marker='o')
+    plt.grid()
     plt.show()
-    plt.gcf().clear()
 
-    plt.xlabel("Days")
+    plt.title("Number of users seen corresponding to all towers over the hours of January.")
+    plt.xlabel("Hours")
     plt.ylabel("Number of users seen.")
     plt.plot(xaxis, userlens, marker='o')
+    plt.grid()
     plt.show()
     plt.gcf().clear()
 
-    plt.xlabel("Days")
+    plt.title("Number of calls made by all users seen among all towers over the hours of January.")
+    plt.xlabel("Hours")
     plt.ylabel("Number of calls made in all towers.")
     plt.plot(xaxis, calls, marker='o')
+    plt.grid()
     plt.show()
     plt.gcf().clear()
 
-    plt.xlabel("Days")
+    plt.title("Number of text messages sent by all users in all towers over the hours of January.")
+    plt.xlabel("Hours")
     plt.ylabel("Number of SMSs sent in all towers.")
     plt.plot(xaxis, smss, marker='o')
+    plt.grid()
     plt.show()
     plt.gcf().clear()
 
