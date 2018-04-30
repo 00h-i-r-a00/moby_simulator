@@ -18,6 +18,7 @@ def main():
     smss = []
     smssagg = []
     for day in days_of_the_year:
+        print "Processing day:", day
         commsfile = str(day) + COMMS_EXT
         tower_set = set()
         tower_set_aggrigate = set()
@@ -57,34 +58,47 @@ def main():
     plt.title("Number of towers seen over the days of January.")
     plt.xlabel("Days")
     plt.ylabel("Number of Towers seen.")
-    plt.plot(days_to_plot, towerlensagg, marker='o')
+    xaxis = [i for i in xrange(len(days_to_plot))]
+    plt.plot(xaxis, towerlensagg, marker='o')
     plt.xticks(rotation=45)
+    plt.xticks(xaxis, days_to_plot)
     plt.grid()
     plt.show()
+    plt.savefig("towers_days.png")
+    plt.gcf().clear()
 
     plt.title("Number of users seen corresponding to all towers seen over the days of January.")
     plt.xlabel("Days")
     plt.ylabel("Number of Users seen.")
-    plt.plot(days_to_plot, userlensagg, marker='o')
+    plt.plot(xaxis, userlensagg, marker='o')
+    plt.xticks(xaxis, days_to_plot)
     plt.xticks(rotation=45)
     plt.grid()
     plt.show()
+    plt.savefig("users_days.png")
+    plt.gcf().clear()
 
     plt.title("Number of calls made by all users among all towers over the days of January.")
     plt.xlabel("Days")
     plt.ylabel("Number of Calls made in all towers.")
-    plt.plot(days_to_plot, callsagg, marker='o')
+    plt.plot(xaxis, callsagg, marker='o')
+    plt.xticks(xaxis, days_to_plot)
     plt.xticks(rotation=45)
     plt.grid()
     plt.show()
+    plt.savefig("calls_days.png")
+    plt.gcf().clear()
 
     plt.title("Number of text messages sent by all users in all towers over the days of January.")
     plt.xlabel("Days")
     plt.ylabel("Number of SMSs sent in all towers.")
-    plt.plot(days_to_plot, smssagg, marker='o')
+    plt.plot(xaxis, smssagg, marker='o')
+    plt.xticks(xaxis, days_to_plot)
     plt.xticks(rotation=45)
     plt.grid()
     plt.show()
+    plt.savefig("texts_days.png")
+    plt.gcf().clear()
 
     plt.title("Number of towers seen over the hours of January.")
     plt.xlabel("Hours")
@@ -93,6 +107,8 @@ def main():
     plt.plot(xaxis, towerlens, marker='o')
     plt.grid()
     plt.show()
+    plt.savefig("towers_hours.png")
+    plt.gcf().clear()
 
     plt.title("Number of users seen corresponding to all towers over the hours of January.")
     plt.xlabel("Hours")
@@ -100,6 +116,7 @@ def main():
     plt.plot(xaxis, userlens, marker='o')
     plt.grid()
     plt.show()
+    plt.savefig("users_hours.png")
     plt.gcf().clear()
 
     plt.title("Number of calls made by all users seen among all towers over the hours of January.")
@@ -108,6 +125,7 @@ def main():
     plt.plot(xaxis, calls, marker='o')
     plt.grid()
     plt.show()
+    plt.savefig("calls_hours.png")
     plt.gcf().clear()
 
     plt.title("Number of text messages sent by all users in all towers over the hours of January.")
@@ -116,6 +134,7 @@ def main():
     plt.plot(xaxis, smss, marker='o')
     plt.grid()
     plt.show()
+    plt.savefig("texts_hours.png")
     plt.gcf().clear()
 
 if __name__ == "__main__":
