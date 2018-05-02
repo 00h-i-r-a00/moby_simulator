@@ -55,7 +55,7 @@ def main():
     plt.figure(1)
     plt.style.use('ggplot')
 
-    plt.title("Number of towers seen over the days of January.")
+    plt.title("Number of towers seen over the days.(" + str(start_day) + "_" + str(end_day) + ")")
     plt.xlabel("Days")
     plt.ylabel("Number of Towers seen.")
     xaxis = [i for i in xrange(len(days_to_plot))]
@@ -67,7 +67,7 @@ def main():
     plt.savefig("towers_days" + str(start_day) + "_" + str(end_day) + ".png")
     plt.gcf().clear()
 
-    plt.title("Number of users seen corresponding to all towers seen over the days of January.")
+    plt.title("Number of users seen corresponding to all towers seen over the days.(" + str(start_day) + "_" + str(end_day) + ")")
     plt.xlabel("Days")
     plt.ylabel("Number of Users seen.")
     plt.plot(xaxis, userlensagg, marker='o')
@@ -78,7 +78,7 @@ def main():
     plt.savefig("users_days" + str(start_day) + "_" + str(end_day) + ".png")
     plt.gcf().clear()
 
-    plt.title("Number of calls made by all users among all towers over the days of January.")
+    plt.title("Number of calls made by all users among all towers over the days.(" + str(start_day) + "_" + str(end_day) + ")")
     plt.xlabel("Days")
     plt.ylabel("Number of Calls made in all towers.")
     plt.plot(xaxis, callsagg, marker='o')
@@ -89,7 +89,7 @@ def main():
     plt.savefig("calls_days" + str(start_day) + "_" + str(end_day) + ".png")
     plt.gcf().clear()
 
-    plt.title("Number of text messages sent by all users in all towers over the days of January.")
+    plt.title("Number of text messages sent by all users in all towers over the days.(" + str(start_day) + "_" + str(end_day) + ")")
     plt.xlabel("Days")
     plt.ylabel("Number of SMSs sent in all towers.")
     plt.plot(xaxis, smssagg, marker='o')
@@ -100,7 +100,7 @@ def main():
     plt.savefig("texts_days" + str(start_day) + "_" + str(end_day) + ".png")
     plt.gcf().clear()
 
-    plt.title("Number of towers seen over the hours of January.")
+    plt.title("Number of towers seen over the hours.(" + str(start_day) + "_" + str(end_day) + ")")
     plt.xlabel("Hours")
     plt.ylabel("Number of Towers seen.")
     xaxis = [i for i in xrange(len(towerlens))]
@@ -110,7 +110,7 @@ def main():
     plt.savefig("towers_hours" + str(start_day) + "_" + str(end_day) + ".png")
     plt.gcf().clear()
 
-    plt.title("Number of users seen corresponding to all towers over the hours of January.")
+    plt.title("Number of users seen corresponding to all towers over the hours.(" + str(start_day) + "_" + str(end_day) + ")")
     plt.xlabel("Hours")
     plt.ylabel("Number of users seen.")
     plt.plot(xaxis, userlens, marker='o')
@@ -119,7 +119,7 @@ def main():
     plt.savefig("users_hours" + str(start_day) + "_" + str(end_day) + ".png")
     plt.gcf().clear()
 
-    plt.title("Number of calls made by all users seen among all towers over the hours of January.")
+    plt.title("Number of calls made by all users seen among all towers over the hours.(" + str(start_day) + "_" + str(end_day) + ")")
     plt.xlabel("Hours")
     plt.ylabel("Number of calls made in all towers.")
     plt.plot(xaxis, calls, marker='o')
@@ -128,7 +128,7 @@ def main():
     plt.savefig("calls_hours" + str(start_day) + "_" + str(end_day) + ".png")
     plt.gcf().clear()
 
-    plt.title("Number of text messages sent by all users in all towers over the hours of January.")
+    plt.title("Number of text messages sent by all users in all towers over the hours.(" + str(start_day) + "_" + str(end_day) + ")")
     plt.xlabel("Hours")
     plt.ylabel("Number of SMSs sent in all towers.")
     plt.plot(xaxis, smss, marker='o')
