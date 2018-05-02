@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 
 start_day = '20090101'
 end_day = '20090201'
-days_of_the_year = [d.strftime('%Y%m%d') for d in pandas.date_range('20090101','20090201')]
-days_to_plot = [d.strftime('%m%d') for d in pandas.date_range('20090101','20090201')]
+days_of_the_year = [d.strftime('%Y%m%d') for d in pandas.date_range(start_day,end_day)]
+days_to_plot = [d.strftime('%m%d') for d in pandas.date_range(start_day,end_day)]
 COMMS_EXT = ".comms"
 
 def main():
