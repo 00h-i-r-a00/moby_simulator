@@ -2,6 +2,7 @@
 from collections import defaultdict
 import argparse
 import sys
+import time
 
 DATA_FILE_PREFIX = "data/"
 CONFIG_FILE_PREFIX = "data/seeds/"
@@ -16,9 +17,11 @@ message_queue = defaultdict(dict)
 message_queue_map = defaultdict(list)
 message_delivered = defaultdict(list)
 queue_occupancy = defaultdict(dict)
+message_delays = defaultdict(int)
 message_delivery_count = 0
 dirty_nodes = []
-
+total_message_exchanges = 0
+total_time = 0
 
 class Message:
     def __init__(self, id, ttl, src, dst, hop, trust):
@@ -44,10 +47,10 @@ def main():
     global network_state_old
     dirty_nodes = []
     configuration_file = CONFIG_FILE_PREFIX + str(configuration) + CONFIG_FILE_FORMAT
-    
+
     result_file = RESULT_FILE_PREFIX + str(configuration) + RESULT_FILE_FORMAT
     result_file_queue_occupancy = RESULT_FILE_PREFIX + str(configuration) + '_queue_occupancy' + RESULT_FILE_FORMAT
-    
+
     # Parse the .config file
     print "Parsing configuration and messages from seed: ", configuration_file
     data = open(configuration_file)
@@ -58,22 +61,23 @@ def main():
     end_day = int(data.readline().strip())
     seed = int(data.readline().strip())
     queuesize = int(data.readline().strip())
-        
+
 #adding these two just for the sake of consistency
 
 
     percentagehoursactive = int(data.readline().strip())
     messagegenerationtype = int(data.readline().strip())
     deliveryratiotype = int(data.readline().strip()) #1 == cumulative sum; #2 == total sum
+    distributiontype = str(data.readline().strip())
+    threshold = str(data.readline().strip())
+    message_delay_file = CONFIG_FILE_PREFIX + str(configuration) + '_message_delays.csv'
+    file_delay = open(message_delay_file, 'w')
 
-    
-    
- 
     for entry in data:
         # print entry
         # ID, TTL, Source, Destination, hop, trust
         hour, id, ttl, src, dst, hop, trust = entry.strip().split(",")
-        msg = Message(id, int(ttl), src, dst, hop, trust)
+        msg = Message(id, int(ttl), src, dst, int(hop), trust)
         message_queue_map[int(hour)].append(msg)
         total_messages2 += 1
 
@@ -130,12 +134,21 @@ def main():
             for tower in network_state_new.keys():
                 users_in_tower = network_state_new[tower]
                 if queuesize == 0:
-                    if perform_message_exchanges(users_in_tower):
+                    if perform_message_exchanges(users_in_tower, current_day, current_hour):
                         dirty_nodes += users_in_tower
+                    else:
+                        print "Message Exchange Did Not Occur for day: %d, hour: %d for queuesize 0" %(current_day, current_hour)
                 else:
                     if perform_message_exchanges_with_queue(users_in_tower, queuesize, current_day, current_hour):
                         dirty_nodes += users_in_tower
-                            
+                    else:
+                        print "Message Exchange Did Not Occur for day: %d, hour %d for queuesize %d" %(current_day, current_hour, queuesize)
+
+
+           ##increment the hop count of every message per hour
+           #for msg_id in message_delays:
+            #   message_delays[msg_id] += 1
+
             print "Messages for this hour sent, message exchanges complete. Perform destination check"
             for user, mq in message_queue.iteritems():
                 dellist = []
@@ -145,14 +158,21 @@ def main():
                         if msg.dst == user and msg.id:
                             message_delivery_count += 1
                             message_delivered[user].append(msg.id)
+                            if msg.id not in message_delays:
+                                message_delays[msg.id] = int(msg.hop)
                             msg.ttl = 60
                         elif msg.ttl > 1:
                             msg.ttl -= 1
+                            msg.hop += 1
                         else:
+
                             dellist.append(msg.id)
                 for id in dellist:
                     del message_queue[user][id]
-            print "Updaing old state to new state."
+
+
+
+            print "Updating old state to new state."
             for key, value in network_state_new.iteritems():
                 network_state_old[key] = value
             dirty_nodes = []
@@ -168,6 +188,11 @@ def main():
                 key = str(day) + "," + str(hour)
                 for user, queueocc in queue_occupancy[key].iteritems():
                     outfile.write(str(key) + "," + str(user) + "," + str(queueocc) + '\n')
+
+    for user, msgids in message_delivered.iteritems():
+        for msgid in msgids:
+            file_delay.write(str(msgid) + "," + str(message_delays[msgid]) + "\n")
+
 def getline(*args):
     retstr = str(args[0])
     dlim = ','
@@ -183,28 +208,15 @@ def clean_users(users):
             new_dirty.append(node)
     dirty_nodes = new_dirty
 
-def perform_message_exchanges(users):
-    dirty = list(set(users).intersection(dirty_nodes))
-    for u1 in dirty:
-        for u2 in users:
-            if u1 == u2:
-                continue
-            mq1 = message_queue[u1]
-            mq2 = message_queue[u2]
-            for key in mq1.keys():
-                mq2[key] = mq1[key]
-            for key in mq2.keys():
-                mq1[key] = mq2[key]
-    return len(dirty) > 0
-                    # Any of the trust score changing logic should come here.
-    # print "Resulting message queue length: ", len(mq)
-
-def perform_message_exchanges_with_queue(users, queuesize, current_day, current_hour):
-
+def perform_message_exchanges(users, current_day, current_hour):
     queue_key = str(current_day) + "," + str(current_hour)
-
+    global total_message_exchanges, total_time
     dirty = list(set(users).intersection(dirty_nodes))
+    message_exchanges = 0
+    if len(dirty) == 0:
+        queue_occupancy[queue_key]['nouser'] = float('NaN')
 
+    start_time = time.time()
     for u1 in dirty:
         for u2 in users:
             if u1 == u2:
@@ -218,9 +230,55 @@ def perform_message_exchanges_with_queue(users, queuesize, current_day, current_
                 queue_occupancy[queue_key][u2] = 0
 
             for key in mq1.keys():
+                mq2[key] = mq1[key]
+                message_exchanges += 1
+                queue_occupancy[queue_key][u2] = len(mq2.keys())
+            for key in mq2.keys():
+                mq1[key] = mq2[key]
+                message_exchanges += 1
+
+                queue_occupancy[queue_key][u1] = len(mq1.keys())
+    
+    elapsed_time = time.time() - start_time
+    total_message_exchanges += message_exchanges
+    total_time += elapsed_time
+
+    if len(dirty) > 0:
+        print "Time Elapsed for day %d, hour %d, message exchanges num %d:   %f" %(current_day, current_hour, message_exchanges, elapsed_time)
+        print "Total Time So FarElapsed in Exchanging %d messages: %f " % (total_message_exchanges, total_time)
+
+    return len(dirty) > 0
+                    # Any of the trust score changing logic should come here.
+    # print "Resulting message queue length: ", len(mq)
+
+def perform_message_exchanges_with_queue(users, queuesize, current_day, current_hour):
+    global total_message_exchanges, total_time
+    queue_key = str(current_day) + "," + str(current_hour)
+    #get dirty nodes only for that tower; i.e new nodes introduced for the tower
+    dirty = list(set(users).intersection(dirty_nodes))
+    message_exchanges = 0
+
+    if len(dirty) == 0:
+        queue_occupancy[queue_key]['nouser'] = float('NaN')
+    start_time = time.time()
+    for u1 in dirty:
+        for u2 in users:
+            if u1 == u2:
+                continue
+            mq1 = message_queue[u1]
+            mq2 = message_queue[u2]
+
+            if len(mq1.keys()) == 0:
+                queue_occupancy[queue_key][u1] = 0
+            if len(mq2.keys()) == 0:
+                queue_occupancy[queue_key][u2] = 0
+
+            for key in mq1.keys():
+#collect unique messages being transferred this hour
 
                 if len(mq2.keys()) < queuesize:
                     mq2[key] = mq1[key]
+                    message_exchanges += 1
                     queue_occupancy[queue_key][u2] = len(mq2.keys())
                 else:
                     #queue is full
@@ -229,9 +287,19 @@ def perform_message_exchanges_with_queue(users, queuesize, current_day, current_
             for key in mq2.keys():
                 if len(mq1.keys()) < queuesize:
                     mq1[key] = mq2[key]
+                    message_exchanges += 1
                     queue_occupancy[queue_key][u1] = len(mq1.keys())
                 else:
                     queue_occupancy[queue_key][u1] = queuesize
+
+
+    elapsed_time = time.time() - start_time
+    total_message_exchanges += message_exchanges
+    total_time += elapsed_time
+
+    if len(dirty) > 0:
+        print "Time Elapsed for day %d, hour %d, message exchanges num %d:   %f" %(current_day, current_hour, message_exchanges, elapsed_time)
+        print "Total Time So FarElapsed in Exchanging %d messages: %f " % (total_message_exchanges, total_time)
 
     return len(dirty) > 0
 
