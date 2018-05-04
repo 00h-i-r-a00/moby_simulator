@@ -231,54 +231,28 @@ def perform_message_exchanges(users, current_day, current_hour):
     # print "Resulting message queue length: ", len(mq)
 
 def perform_message_exchanges_with_queue(users, queuesize, current_day, current_hour):
-    global total_message_exchanges, total_time
     queue_key = str(current_day) + "," + str(current_hour)
-    #get dirty nodes only for that tower; i.e new nodes introduced for the tower
     dirty = list(set(users).intersection(dirty_nodes))
-    message_exchanges = 0
-
     if len(dirty) == 0:
         queue_occupancy[queue_key]['nouser'] = float('NaN')
-    start_time = time.time()
     for u1 in dirty:
         for u2 in users:
             if u1 == u2:
                 continue
             mq1 = message_queue[u1]
             mq2 = message_queue[u2]
-
-            if len(mq1.keys()) == 0:
-                queue_occupancy[queue_key][u1] = 0
-            if len(mq2.keys()) == 0:
-                queue_occupancy[queue_key][u2] = 0
-
             for key in mq1.keys():
-#collect unique messages being transferred this hour
-
                 if len(mq2.keys()) < queuesize:
                     mq2[key] = mq1[key]
-                    message_exchanges += 1
-                    queue_occupancy[queue_key][u2] = len(mq2.keys())
                 else:
-                    #queue is full
-                    queue_occupancy[queue_key][u2] = queuesize
-
+                    break
             for key in mq2.keys():
                 if len(mq1.keys()) < queuesize:
                     mq1[key] = mq2[key]
-                    message_exchanges += 1
-                    queue_occupancy[queue_key][u1] = len(mq1.keys())
                 else:
-                    queue_occupancy[queue_key][u1] = queuesize
-
-
-    elapsed_time = time.time() - start_time
-    total_message_exchanges += message_exchanges
-    total_time += elapsed_time
-
-    if len(dirty) > 0:
-        print "Time Elapsed for day %d, hour %d, message exchanges num %d:   %f" %(current_day, current_hour, message_exchanges, elapsed_time)
-        print "Total Time So FarElapsed in Exchanging %d messages: %f " % (total_message_exchanges, total_time)
+                    break
+            queue_occupancy[queue_key][u1] = len(mq1.keys())
+            queue_occupancy[queue_key][u2] = len(mq2.keys())
 
     return len(dirty) > 0
 
