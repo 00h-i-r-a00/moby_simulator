@@ -210,42 +210,21 @@ def clean_users(users):
 
 def perform_message_exchanges(users, current_day, current_hour):
     queue_key = str(current_day) + "," + str(current_hour)
-    global total_message_exchanges, total_time
     dirty = list(set(users).intersection(dirty_nodes))
-    message_exchanges = 0
     if len(dirty) == 0:
         queue_occupancy[queue_key]['nouser'] = float('NaN')
-
-    start_time = time.time()
     for u1 in dirty:
         for u2 in users:
             if u1 == u2:
                 continue
             mq1 = message_queue[u1]
             mq2 = message_queue[u2]
-
-            if len(mq1.keys()) == 0:
-                queue_occupancy[queue_key][u1] = 0
-            if len(mq2.keys()) == 0:
-                queue_occupancy[queue_key][u2] = 0
-
             for key in mq1.keys():
                 mq2[key] = mq1[key]
-                message_exchanges += 1
-                queue_occupancy[queue_key][u2] = len(mq2.keys())
             for key in mq2.keys():
                 mq1[key] = mq2[key]
-                message_exchanges += 1
-
-                queue_occupancy[queue_key][u1] = len(mq1.keys())
-    
-    elapsed_time = time.time() - start_time
-    total_message_exchanges += message_exchanges
-    total_time += elapsed_time
-
-    if len(dirty) > 0:
-        print "Time Elapsed for day %d, hour %d, message exchanges num %d:   %f" %(current_day, current_hour, message_exchanges, elapsed_time)
-        print "Total Time So FarElapsed in Exchanging %d messages: %f " % (total_message_exchanges, total_time)
+            queue_occupancy[queue_key][u1] = len(mq1.keys())
+            queue_occupancy[queue_key][u2] = len(mq2.keys())
 
     return len(dirty) > 0
                     # Any of the trust score changing logic should come here.
