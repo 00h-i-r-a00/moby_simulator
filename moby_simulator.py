@@ -5,8 +5,8 @@ import sys
 import time
 
 DATA_FILE_PREFIX = "data/"
-CONFIG_FILE_PREFIX = "data/seeds/"
-RESULT_FILE_PREFIX = "data/results/"
+CONFIG_FILE_PREFIX = "data/test_seeds/"
+RESULT_FILE_PREFIX = "data/test_results/"
 DATA_FILE_FORMAT = ".twr"
 CONFIG_FILE_FORMAT = ".config"
 RESULT_FILE_FORMAT = ".csv"
