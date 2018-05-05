@@ -77,7 +77,8 @@ def main():
         # print entry
         # ID, TTL, Source, Destination, hop, trust
         hour, id, ttl, src, dst, hop, trust = entry.strip().split(",")
-        msg = Message(id, int(ttl), src, dst, int(hop), trust)
+        msg = Message(id, int(ttl), src, dst, int(hour), trust)
+        # Hop = time msg gets added to the network for easier calculations!
         message_queue_map[int(hour)].append(msg)
         total_messages2 += 1
 
@@ -144,11 +145,6 @@ def main():
                     else:
                         print "Message Exchange Did Not Occur for day: %d, hour %d for queuesize %d" %(current_day, current_hour, queuesize)
 
-
-           ##increment the hop count of every message per hour
-           #for msg_id in message_delays:
-            #   message_delays[msg_id] += 1
-
             print "Messages for this hour sent, message exchanges complete. Perform destination check"
             for user, mq in message_queue.iteritems():
                 dellist = []
@@ -159,11 +155,12 @@ def main():
                             message_delivery_count += 1
                             message_delivered[user].append(msg.id)
                             if msg.id not in message_delays:
-                                message_delays[msg.id] = int(msg.hop)
+                                hour_of_simulation = ((start_day - current_day)*24) + current_hour
+                                message_delays[msg.id] = int(hour_of_simulation - int(msg.hop))
+                                print "Message delay: ", message_delays[msg.id]
                             msg.ttl = 60
                         elif msg.ttl > 1:
                             msg.ttl -= 1
-                            #msg.hop += 1
                         else:
 
                             dellist.append(msg.id)
@@ -225,10 +222,8 @@ def perform_message_exchanges(users, current_day, current_hour):
             mq21 = list(set(mq2.keys()).difference(set(mq1.keys())))
             for key in mq12:
                 mq2[key] = mq1[key]
-                mq2[key].hop += 1
             for key in mq21:
                 mq1[key] = mq2[key]
-                mq1[key].hop += 1
             queue_occupancy[queue_key][u1] = len(mq1.keys())
             queue_occupancy[queue_key][u2] = len(mq2.keys())
 
@@ -254,13 +249,11 @@ def perform_message_exchanges_with_queue(users, queuesize, current_day, current_
             for key in mq12:
                 if len(mq2.keys()) < queuesize:
                     mq2[key] = mq1[key]
-                    mq2[key].hop += 1
                 else:
                     break
             for key in mq21:
                 if len(mq1.keys()) < queuesize:
                     mq1[key] = mq2[key]
-                    mq1[key].hop += 1
                 else:
                     break
             queue_occupancy[queue_key][u1] = len(mq1.keys())
