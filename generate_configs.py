@@ -11,28 +11,35 @@ if not os.path.exists(os.getcwd() + '/configs'):
 
 ####################################################
 
-achtungs = ["achtung02", "achtung03", "achtung04", "achtung05", "achtung06", "achtung07", "achtung08", "achtung09", "achtung10", "achtung11", "achtung12", "achtung13", "achtung14", "achtung15", "achtung16", "achtung17"]
+achtungs = ["achtung02", "achtung03", "achtung04", "achtung05", "achtung06", "achtung07", "achtung12", "achtung13", "achtung14", "achtung15", "achtung16", "achtung17"]
 achtungpool = itertools.cycle(achtungs)
 
 run_number = 0
-ttls = [12, 24, 36, 48, 60, 72]
-start_days = [100]
+#ttls = [12, 24, 36, 48, 60, 72]
+ttls = [72]
+start_days = [20]
 number_of_days = [3]
-cities = [0, 1, 2, 3]
-cooldowns = [12, 24, 36]
-number_of_messages = [100000]
-max_queue_size = 300
-queuesizes = [queuesize for queuesize in xrange(0,max_queue_size + 1,100)]
-seeds = [3007052]
+#cities = [0, 1, 2, 3]
+cities = [0]
+#cooldowns = [12, 24, 36]
+cooldowns = [12]
+number_of_messages = [1000]
+#max_queue_size = 200
+#queuesizes = [queuesize for queuesize in xrange(0,max_queue_size + 1,10)]
+#seeds = [3007052]
+queuesizes = [0]
+seeds = [244896923]
 messagegenerationtype = [1] #[1,2]
-percentagehoursactive = [10]
+#percentagehoursactive = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+percentagehoursactive = [50]
 deliveryratiotype = [1] #[1,2]
-
+#distributiontype = ['uniform', 'user_activity_based']
+distributiontype = ['uniform', 'user_activity_based', 'total_users_based']
+thresholds = [0, 12, 24, 36, 48, 60]
 def main():
     config = {}
     config_ctr = 0
-    total_configs = len(ttls) * len(start_days) * len(number_of_days) * len(cities) * len(cooldowns) * len(queuesizes) * len(seeds) * len(messagegenerationtype)* len(percentagehoursactive) * len(deliveryratiotype)
-
+    total_configs = len(ttls) * len(start_days) * len(number_of_days) * len(cities) * len(cooldowns) * len(queuesizes) * len(seeds) * len(messagegenerationtype)* len(percentagehoursactive) * len(deliveryratiotype) * len(distributiontype) * len(thresholds)
     print "Cleaning current config files."
     for f in achtungs:
         if os.path.isfile(os.getcwd() + '/' + f + '.json'):
@@ -49,28 +56,32 @@ def main():
                                     for val_msgtype in messagegenerationtype:
                                         for val_active in percentagehoursactive:
                                             for val_delratio in deliveryratiotype:
-                                                current_achtung = next(achtungpool)
-                                                config["ttl"] = val_ttl
-                                                config["start-day"] = val_start
-                                                config["end-day"] = val_start+val_nod
-                                                config["city-number"] = val_city
-                                                config["cooldown"] = val_cd
-                                                config["number"] = val_nm
-                                                config["queuesize"] = val_queue
-                                                config["seed"] = val_seed
-                                                config["messagegenerationtype"] = val_msgtype
-                                                config["percentagehoursactive"] = val_active
-                                                config["deliveryratiotype"] = val_delratio
-                                                config["configuration"] = str(run_number) + "_" + str(config_ctr)
-                                                config_ctr += 1
+                                                for val_disttype in distributiontype:
+                                                    for val_threshold in thresholds:
+                                                        current_achtung = next(achtungpool)
+                                                        config["ttl"] = val_ttl
+                                                        config["start-day"] = val_start
+                                                        config["end-day"] = val_start+val_nod
+                                                        config["city-number"] = val_city
+                                                        config["cooldown"] = val_cd
+                                                        config["number"] = val_nm
+                                                        config["queuesize"] = val_queue
+                                                        config["seed"] = val_seed
+                                                        config["messagegenerationtype"] = val_msgtype
+                                                        config["percentagehoursactive"] = val_active
+                                                        config["deliveryratiotype"] = val_delratio
+                                                        config["distributiontype"] = val_disttype
+                                                        config["configuration"] = str(run_number) + "_" + str(config_ctr)
+                                                        config["threshold"] = val_threshold 
+                                                        config_ctr += 1
 
-                                                with open(current_achtung+".json", 'a+') as outfile:
-                                                    outfile.write("!")
-                                                    json.dump(config, outfile)
+                                                        with open(current_achtung+".json", 'a+') as outfile:
+                                                            outfile.write("!")
+                                                            json.dump(config, outfile)
 
                                 #keeping track of the parameters used inside configurations to help with graphs
-                                                with open('configs/' + config["configuration"] + '.txt', 'w') as out:
-                                                    json.dump(config, out)
+                                                        with open('configs/' + config["configuration"] + '.txt', 'w') as out:
+                                                            json.dump(config, out)
 
 
     print config_ctr, "Uploading configs."
