@@ -163,7 +163,7 @@ def main():
                             msg.ttl = 60
                         elif msg.ttl > 1:
                             msg.ttl -= 1
-                            msg.hop += 1
+                            #msg.hop += 1
                         else:
 
                             dellist.append(msg.id)
@@ -219,10 +219,16 @@ def perform_message_exchanges(users, current_day, current_hour):
                 continue
             mq1 = message_queue[u1]
             mq2 = message_queue[u2]
-            for key in mq1.keys():
+            # In 1 but not 2
+            mq12 = list(set(mq1.keys()).difference(set(mq2.keys())))
+            # In 2 but not 1
+            mq21 = list(set(mq2.keys()).difference(set(mq1.keys())))
+            for key in mq12:
                 mq2[key] = mq1[key]
-            for key in mq2.keys():
+                mq2[key].hop += 1
+            for key in mq21:
                 mq1[key] = mq2[key]
+                mq1[key].hop += 1
             queue_occupancy[queue_key][u1] = len(mq1.keys())
             queue_occupancy[queue_key][u2] = len(mq2.keys())
 
@@ -241,14 +247,20 @@ def perform_message_exchanges_with_queue(users, queuesize, current_day, current_
                 continue
             mq1 = message_queue[u1]
             mq2 = message_queue[u2]
-            for key in mq1.keys():
+            # In 1 but not 2
+            mq12 = list(set(mq1.keys()).difference(set(mq2.keys())))
+            # In 2 but not 1
+            mq21 = list(set(mq2.keys()).difference(set(mq1.keys())))
+            for key in mq12:
                 if len(mq2.keys()) < queuesize:
                     mq2[key] = mq1[key]
+                    mq2[key].hop += 1
                 else:
                     break
-            for key in mq2.keys():
+            for key in mq21:
                 if len(mq1.keys()) < queuesize:
                     mq1[key] = mq2[key]
+                    mq1[key].hop += 1
                 else:
                     break
             queue_occupancy[queue_key][u1] = len(mq1.keys())
