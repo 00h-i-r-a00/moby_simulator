@@ -267,6 +267,7 @@ def get_average_delays(plot_number, configs, args):
     
     average_delays = []
     cellText = []
+    
     for fi in configs:
         delays = []
         fi_ = fi.replace('configs', 'results').replace('.txt', '_message_delays.csv')
@@ -283,7 +284,8 @@ def get_average_delays(plot_number, configs, args):
                 celltext += str(key) + ": " + str(config_content[key]) + "; "
             
             cellText.append([celltext, average_delay])
-                
+    
+    cellText.sort(key = lambda x: x[1])            
     fig, ax = plt.subplots()
     fig.patch.set_visible(False)
     ax.axis('off')
@@ -297,9 +299,14 @@ def get_average_delays(plot_number, configs, args):
     the_table.set_fontsize(10)
     the_table.scale(1, 5)
     #the_table.set_title('Table')
-    plt.title('Table')
-    plt.savefig('Tablename.png')            
     
+    plt.savefig('1000messages.png')            
+    
+    title = ''
+    for key in config_same_key_values:
+		title += str(key) + ': ' + str(configs_content[0][key]) + "; "
+    
+    print title
     
 def get_configs(args):
     number_of_messages = args.number
