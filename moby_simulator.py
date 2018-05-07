@@ -157,7 +157,7 @@ def main():
                             message_delivery_count += 1
                             message_delivered[user].append(msg.id)
                             if msg.id not in message_delays:
-                                hour_of_simulation = ((start_day - current_day)*24) + current_hour
+                                hour_of_simulation = ((current_day - start_day)*24) + current_hour
                                 message_delays[msg.id] = int(hour_of_simulation - int(msg.hop))
                                 print "Message delay: ", message_delays[msg.id]
                             msg.ttl = 60
