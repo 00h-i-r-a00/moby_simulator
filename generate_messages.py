@@ -30,6 +30,7 @@ def main():
     parser.add_argument('--deliveryratiotype', help='1 if total_messages == upto that hour; 2 if total_messages == total number of messages in all hours', type=int, nargs='?', default=1)
     parser.add_argument('--messagegenerationtype', help='Original Criteria or Selectively changing sources and destinations', type=int, nargs='?', default=1)
     parser.add_argument('--distributiontype', help='2 types -> "uniform" or "user-activity-based" ; used in conjunction with messagegenerationtype', type=str, nargs='?', default='uniform')
+    parser.add_argument('--sybil-number', help='Number of sybil messages to send at each tower.', type=int, nargs='?', default=0)
 
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
@@ -48,6 +49,7 @@ def main():
     message_generation_type = args.messagegenerationtype
     deliveryratiotype = args.deliveryratiotype
     distributiontype = args.distributiontype
+    sybil_number = args.sybil_number
 
     message_sending_hours = ((end_day - start_day) * 24) - cooldown
 
@@ -106,6 +108,7 @@ def main():
         out_file.write(str(deliveryratiotype) + "\n")
         out_file.write(str(distributiontype) + "\n")
         out_file.write(str(threshold) + "\n")
+        out_file.write(str(sybil_number) + "\n")
 
     print "Generating: ", current_message_file
     distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype)
@@ -188,22 +191,22 @@ def get_message_distribution(sending_hours, total_messages, dist_type):
             users_sum = 0
             for tower, num_users in overall_network_state[i].iteritems():
                 users_sum += num_users
-                
+
             total_users += users_sum
 
             users_per_hour[i] = users_sum
 
         for i in xrange(0, sending_hours):
             dictionary[i] = int(math.ceil((users_per_hour[i]/total_users) * total_messages))
-            total_msgs_sent += dictionary[i]     
-        
+            total_msgs_sent += dictionary[i]
+
         overflow = total_messages - total_msgs_sent
 
-       
+
         for i in xrange(0, overflow):
             dictionary[i] += 1
-           
-        return dictionary 
+
+        return dictionary
 
 def get_destinations_active_for_X_percentage_of_hours(x, active_user_pool_per_hour, current_hour):
 

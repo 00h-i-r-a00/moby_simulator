@@ -70,6 +70,7 @@ def main():
     deliveryratiotype = int(data.readline().strip()) #1 == cumulative sum; #2 == total sum
     distributiontype = str(data.readline().strip())
     threshold = str(data.readline().strip())
+    sybil_number = str(data.readline().strip())
     message_delay_file = CONFIG_FILE_PREFIX + str(configuration) + '_message_delays.csv'
     file_delay = open(message_delay_file, 'w')
 
@@ -134,6 +135,7 @@ def main():
             queue_occupancy[str(current_day) + "," + str(current_hour)] = defaultdict()
             for tower in network_state_new.keys():
                 users_in_tower = network_state_new[tower]
+                perform_sybil_exchanges(sybil_number, tower, users_in_tower, current_day, current_hour)
                 if queuesize == 0:
                     if perform_message_exchanges(users_in_tower, current_day, current_hour):
                         dirty_nodes += users_in_tower
@@ -204,6 +206,13 @@ def clean_users(users):
         if node not in users:
             new_dirty.append(node)
     dirty_nodes = new_dirty
+
+def perform_sybil_exchanges(sybil_number, tower, users_in_tower, current_day, current_hour):
+    for i in xrange(0, sybil_number):
+        id = str(tower) + "_" + str(current_day) + "_" + str(current_hour) + "_" + str(i)
+        sybil_message = Message(id, 100, -1, -1, -1, 0)
+        for u in users_in_tower:
+            message_queue[u][sybil_message.id] = sybil_message
 
 def perform_message_exchanges(users, current_day, current_hour):
     queue_key = str(current_day) + "," + str(current_hour)
