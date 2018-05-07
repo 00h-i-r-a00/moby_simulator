@@ -27,19 +27,23 @@ number_of_messages = [1000]
 #max_queue_size = 200
 #queuesizes = [queuesize for queuesize in xrange(0,max_queue_size + 1,10)]
 #seeds = [3007052]
-queuesizes = [0]
+queuesizes = [150]
 seeds = [244896923]
 messagegenerationtype = [1] #[1,2]
 #percentagehoursactive = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 percentagehoursactive = [50]
 deliveryratiotype = [1] #[1,2]
 #distributiontype = ['uniform', 'user_activity_based']
-distributiontype = ['uniform', 'user_activity_based', 'total_users_based']
-thresholds = [0, 12, 24, 36, 48, 60]
+#distributiontype = ['uniform', 'user_activity_based', 'total_users_based']
+distributiontype = ['total_users_based']
+thresholds = [12, 24]
+max_number = 10 #max number of sybil messages to send
+sybil_numbers = [number for number in xrange(1, max_number + 1, 1)]
+
 def main():
     config = {}
     config_ctr = 0
-    total_configs = len(ttls) * len(start_days) * len(number_of_days) * len(cities) * len(cooldowns) * len(queuesizes) * len(seeds) * len(messagegenerationtype)* len(percentagehoursactive) * len(deliveryratiotype) * len(distributiontype) * len(thresholds)
+    total_configs = len(ttls) * len(start_days) * len(number_of_days) * len(cities) * len(cooldowns) * len(queuesizes) * len(seeds) * len(messagegenerationtype)* len(percentagehoursactive) * len(deliveryratiotype) * len(distributiontype) * len(thresholds) * len(sybil_numbers)
     print "Cleaning current config files."
     for f in achtungs:
         if os.path.isfile(os.getcwd() + '/' + f + '.json'):
@@ -58,30 +62,32 @@ def main():
                                             for val_delratio in deliveryratiotype:
                                                 for val_disttype in distributiontype:
                                                     for val_threshold in thresholds:
-                                                        current_achtung = next(achtungpool)
-                                                        config["ttl"] = val_ttl
-                                                        config["start-day"] = val_start
-                                                        config["end-day"] = val_start+val_nod
-                                                        config["city-number"] = val_city
-                                                        config["cooldown"] = val_cd
-                                                        config["number"] = val_nm
-                                                        config["queuesize"] = val_queue
-                                                        config["seed"] = val_seed
-                                                        config["messagegenerationtype"] = val_msgtype
-                                                        config["percentagehoursactive"] = val_active
-                                                        config["deliveryratiotype"] = val_delratio
-                                                        config["distributiontype"] = val_disttype
-                                                        config["configuration"] = str(run_number) + "_" + str(config_ctr)
-                                                        config["threshold"] = val_threshold 
-                                                        config_ctr += 1
+                                                        for val_sybilnumber in sybil_numbers:
+                                                            current_achtung = next(achtungpool)
+                                                            config["ttl"] = val_ttl
+                                                            config["start-day"] = val_start
+                                                            config["end-day"] = val_start+val_nod
+                                                            config["city-number"] = val_city
+                                                            config["cooldown"] = val_cd
+                                                            config["number"] = val_nm
+                                                            config["queuesize"] = val_queue
+                                                            config["seed"] = val_seed
+                                                            config["messagegenerationtype"] = val_msgtype
+                                                            config["percentagehoursactive"] = val_active
+                                                            config["deliveryratiotype"] = val_delratio
+                                                            config["distributiontype"] = val_disttype
+                                                            config["configuration"] = str(run_number) + "_" + str(config_ctr)
+                                                            config["threshold"] = val_threshold
+                                                            config["sybil-number"] = val_sybilnumber 
+                                                            config_ctr += 1
 
-                                                        with open(current_achtung+".json", 'a+') as outfile:
-                                                            outfile.write("!")
-                                                            json.dump(config, outfile)
-
+                                                            with open(current_achtung+".json", 'a+') as outfile:
+                                                                outfile.write("!")
+                                                                json.dump(config, outfile)
+  
                                 #keeping track of the parameters used inside configurations to help with graphs
-                                                        with open('configs/' + config["configuration"] + '.txt', 'w') as out:
-                                                            json.dump(config, out)
+                                                            with open('configs/' + config["configuration"] + '.txt', 'w') as out:
+                                                                json.dump(config, out)
 
 
     print config_ctr, "Uploading configs."
