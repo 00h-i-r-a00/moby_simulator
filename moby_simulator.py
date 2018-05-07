@@ -70,7 +70,7 @@ def main():
     deliveryratiotype = int(data.readline().strip()) #1 == cumulative sum; #2 == total sum
     distributiontype = str(data.readline().strip())
     threshold = str(data.readline().strip())
-    sybil_number = str(data.readline().strip())
+    sybil_number = int(data.readline().strip())
     message_delay_file = CONFIG_FILE_PREFIX + str(configuration) + '_message_delays.csv'
     file_delay = open(message_delay_file, 'w')
 
