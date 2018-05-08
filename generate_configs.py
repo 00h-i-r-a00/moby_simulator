@@ -82,6 +82,7 @@ def main():
                                                                 config["configuration"] = str(run_number) + "_" + str(config_ctr)
                                                                 config["threshold"] = val_threshold
                                                                 config["sybil-number"] = val_sybilnumber 
+                                                                config["usethreshold"] = val_usethresholds
                                                                 config_ctr += 1
 
                                                                 with open(current_achtung+".json", 'a+') as outfile:
