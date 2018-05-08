@@ -5,6 +5,7 @@ from collections import defaultdict
 import pdb
 import math
 import numpy as np
+import os
 
 DATA_FILE_PREFIX = "data/"
 SEED_FILE_PREFIX = "data/seeds/"
@@ -13,7 +14,7 @@ CONFIGURATION_FILE_FORMAT = ".config"
 message_id_start = DATA_FILE_PREFIX
 overall_network_state = defaultdict(dict)
 def main():
-    userpool = defaultdict(int)
+    userpool = defaultdict(int)	
     active_userpool_per_hour = {}
     parser = argparse.ArgumentParser(description='Moby message generation script script.')
     parser.add_argument('--number', help='Number of messages to generate', type=int, nargs='?', default=1000)
@@ -31,7 +32,8 @@ def main():
     parser.add_argument('--messagegenerationtype', help='Original Criteria or Selectively changing sources and destinations', type=int, nargs='?', default=1)
     parser.add_argument('--distributiontype', help='2 types -> "uniform" or "user-activity-based" ; used in conjunction with messagegenerationtype', type=str, nargs='?', default='uniform')
     parser.add_argument('--sybil-number', help='Number of sybil messages to send at each tower.', type=int, nargs='?', default=0)
-
+    parser.add_argument('--usethreshold', help='Use this flag if you want to run the simulation based on the reduced threshold defined user-set', action='store_true')
+    
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
     start_day = args.start_day
@@ -50,7 +52,8 @@ def main():
     deliveryratiotype = args.deliveryratiotype
     distributiontype = args.distributiontype
     sybil_number = args.sybil_number
-
+	usethreshold = args.usethreshold
+	
     message_sending_hours = ((end_day - start_day) * 24) - cooldown
 
 
@@ -84,6 +87,7 @@ def main():
     for u in dellist:
         del userpool[u]
     print "Users above threshold: ", len(userpool), " percentage: ", (float(len(userpool))/float(len(allusers)) * 100), "%"
+    users_in_pool = userpool.keys()
     current_message_file = SEED_FILE_PREFIX + str(configuration) + CONFIGURATION_FILE_FORMAT
 # CONFIG FILE FORMAT:
 # length of all users, length of user pool
@@ -92,6 +96,37 @@ def main():
 # Start day
 # End day
 # Seed
+
+#########create threshold specific data folders###################################
+    foldername = DATA_FILE_PREFIX + str(city) + "_" + str(threshold)
+    
+    if not os.path.exists(os.getcwd() + "/" + foldername):
+        
+        os.makedirs(os.getcwd() + "/" + foldername)
+        for current_day in xrange(start_day, end_day):
+            for current_hour in xrange(0,24):
+  
+                current_output_data_file = foldername + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
+                thresh_out = open(current_output_data_file, 'w')
+                current_data_file = DATA_FILE_PREFIX + str(city) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
+                users_this_hour = []
+                print "Filtering Users : hour %d , day %d " %(current_hour, current_day)
+                with open(current_data_file) as data:
+                    for entry in data:
+                        hour, tower_id, user_ids = entry.split(",")
+                        user_ids = user_ids.strip().split("|")
+                        threshold_users_per_tower = [user for user in user_ids if user in users_in_pool]
+                    
+                        if len(threshold_users_per_tower) != 0:
+                            out_row = hour + "," + tower_id + "," + "|".join(threshold_users_per_tower) 
+                            thresh_out.write(out_row + "\n")
+                    
+                thresh_out.close()
+    else:
+        print "Folder for the threshold already exists"                
+      
+####################################################################################
+
     with open(current_message_file, "w+") as out_file:
         out_file.write(str(len(allusers)) + "," + str(len(userpool)))
         out_file.write("\n")
@@ -109,7 +144,8 @@ def main():
         out_file.write(str(distributiontype) + "\n")
         out_file.write(str(threshold) + "\n")
         out_file.write(str(sybil_number) + "\n")
-
+		out_file.write(str(usethreshold) + "\n")
+		
     print "Generating: ", current_message_file
     distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype)
     # ID, TTL, Source, Destination, hop, trust
