@@ -4,7 +4,6 @@ import itertools
 import os
 import os.path
 
-
 ###create a directory to store all the configs######
 if not os.path.exists(os.getcwd() + '/configs'):
     os.makedirs(os.getcwd() + '/configs')
@@ -50,7 +49,6 @@ def main():
     for f in achtungs:
         if os.path.isfile(os.getcwd() + '/' + f + '.json'):
             os.remove(f+".json")
-
     for val_ttl in ttls:
         for val_start in start_days:
             for val_nod in number_of_days:
@@ -81,14 +79,14 @@ def main():
                                                                 config["distributiontype"] = val_disttype
                                                                 config["configuration"] = str(run_number) + "_" + str(config_ctr)
                                                                 config["threshold"] = val_threshold
-                                                                config["sybil-number"] = val_sybilnumber 
+                                                                config["sybil-number"] = val_sybilnumber
                                                                 config["usethreshold"] = val_usethresholds
                                                                 config_ctr += 1
 
                                                                 with open(current_achtung+".json", 'a+') as outfile:
                                                                     outfile.write("!")
                                                                     json.dump(config, outfile)
-  
+
                                 #keeping track of the parameters used inside configurations to help with graphs
                                                                 with open('configs/' + config["configuration"] + '.txt', 'w') as out:
                                                                     json.dump(config, out)

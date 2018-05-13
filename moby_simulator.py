@@ -36,7 +36,7 @@ class Message:
 def main():
     parser = argparse.ArgumentParser(description='Moby simulation script.')
     parser.add_argument('--configuration', help='Configuration to use for the simulation', type=str, nargs='?', default=0)
-    
+
     args = parser.parse_args(sys.argv[1:])
     configuration = args.configuration
     print "Configuration file: ", configuration
@@ -74,7 +74,7 @@ def main():
     threshold = str(data.readline().strip())
     sybil_number = int(data.readline().strip())
     usethreshold = bool(data.readline().strip())
-    
+
     message_delay_file = CONFIG_FILE_PREFIX + str(configuration) + '_message_delays.csv'
     file_delay = open(message_delay_file, 'w')
 
@@ -92,10 +92,10 @@ def main():
             network_state_new = defaultdict(set)
             current_data_file = DATA_FILE_PREFIX + str(city_number) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
             current_data_file_threshold = DATA_FILE_PREFIX + str(city_number) + "_" + str(threshold) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
-            
+
             if usethreshold:
                 current_data_file = current_data_file_threshold
-            
+
             users_this_hour = []
             if not first_state:
                 total_messages = total_messages1 if deliveryratiotype == 1 else total_messages2
