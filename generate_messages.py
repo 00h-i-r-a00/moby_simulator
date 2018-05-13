@@ -14,7 +14,7 @@ CONFIGURATION_FILE_FORMAT = ".config"
 message_id_start = DATA_FILE_PREFIX
 overall_network_state = defaultdict(dict)
 def main():
-    userpool = defaultdict(int)	
+    userpool = defaultdict(int)
     active_userpool_per_hour = {}
     parser = argparse.ArgumentParser(description='Moby message generation script script.')
     parser.add_argument('--number', help='Number of messages to generate', type=int, nargs='?', default=1000)
@@ -33,7 +33,7 @@ def main():
     parser.add_argument('--distributiontype', help='2 types -> "uniform" or "user-activity-based" ; used in conjunction with messagegenerationtype', type=str, nargs='?', default='uniform')
     parser.add_argument('--sybil-number', help='Number of sybil messages to send at each tower.', type=int, nargs='?', default=0)
     parser.add_argument('--usethreshold', help='Use this flag if you want to run the simulation based on the reduced threshold defined user-set', action='store_true')
-    
+
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
     start_day = args.start_day
@@ -53,7 +53,7 @@ def main():
     distributiontype = args.distributiontype
     sybil_number = args.sybil_number
 	usethreshold = args.usethreshold
-	
+
     message_sending_hours = ((end_day - start_day) * 24) - cooldown
 
 
@@ -99,13 +99,13 @@ def main():
 
 #########create threshold specific data folders###################################
     foldername = DATA_FILE_PREFIX + str(city) + "_" + str(threshold)
-    
+
     if not os.path.exists(os.getcwd() + "/" + foldername):
-        
+
         os.makedirs(os.getcwd() + "/" + foldername)
         for current_day in xrange(start_day, end_day):
             for current_hour in xrange(0,24):
-  
+
                 current_output_data_file = foldername + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
                 thresh_out = open(current_output_data_file, 'w')
                 current_data_file = DATA_FILE_PREFIX + str(city) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
@@ -116,15 +116,15 @@ def main():
                         hour, tower_id, user_ids = entry.split(",")
                         user_ids = user_ids.strip().split("|")
                         threshold_users_per_tower = [user for user in user_ids if user in users_in_pool]
-                    
+
                         if len(threshold_users_per_tower) != 0:
-                            out_row = hour + "," + tower_id + "," + "|".join(threshold_users_per_tower) 
+                            out_row = hour + "," + tower_id + "," + "|".join(threshold_users_per_tower)
                             thresh_out.write(out_row + "\n")
-                    
+
                 thresh_out.close()
     else:
-        print "Folder for the threshold already exists"                
-      
+        print "Folder for the threshold already exists"
+
 ####################################################################################
 
     with open(current_message_file, "w+") as out_file:
@@ -145,7 +145,7 @@ def main():
         out_file.write(str(threshold) + "\n")
         out_file.write(str(sybil_number) + "\n")
 		out_file.write(str(usethreshold) + "\n")
-		
+
     print "Generating: ", current_message_file
     distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype)
     # ID, TTL, Source, Destination, hop, trust
@@ -153,8 +153,6 @@ def main():
 
     for hour in xrange(message_sending_hours):
         message_number = distribution[hour]
-        sources_pool = active_userpool_per_hour[hour]
-        destinations_pool = get_destinations_active_for_X_percentage_of_hours(percentage_hours_active, active_userpool_per_hour, hour)
 
         with open(current_message_file, "a+") as out_file:
 
@@ -162,13 +160,10 @@ def main():
 
                 id = DATA_FILE_PREFIX + str(hour) + "_" + str(i)
 
-                if message_generation_type == 1:
-                    src, dst = random.sample(userpool.keys(), 2)
-                    print "Msg No: %d, Current hour %d --> Sources Pool Size: %d ; Destinations Pool Size: %d for threshold %d" % (i, hour, len(userpool), len(userpool), threshold)
-                elif message_generation_type == 2:
-                    src, dst = random.sample(sources_pool, 1)[0], random.sample(destinations_pool, 1)[0]
-
-                    print "Msg No:: %d, Current hour % d --> Sources Pool Size: %d ; Destinations Pool Size: %d" % (i, hour, len(sources_pool), len(destinations_pool))
+                # Don't use the message_generation_type flag for now, maybe need it in the future.
+                # if message_generation_type == 1:
+                src, dst = random.sample(userpool.keys(), 2)
+                print "Msg No: %d, Current hour %d --> Sources Pool Size: %d ; Destinations Pool Size: %d for threshold %d" % (i, hour, len(userpool), len(userpool), threshold)
 
                 src = str(src)
                 dst = str(dst)
@@ -243,30 +238,6 @@ def get_message_distribution(sending_hours, total_messages, dist_type):
             dictionary[i] += 1
 
         return dictionary
-
-def get_destinations_active_for_X_percentage_of_hours(x, active_user_pool_per_hour, current_hour):
-
-    destinations_pool = []
-    destinations_active = defaultdict(int)
-
-    ##checking the number of hours the destinations are active beyond the current hour
-
-    for hour in xrange(current_hour, len(active_user_pool_per_hour.keys())):
-
-        for user in active_user_pool_per_hour[hour]:
-            destinations_active[user] += 1
-
-    total_hours_remaining = len(active_user_pool_per_hour.keys()) - current_hour
-
-    for user, occurences in destinations_active.iteritems():
-        active_percentage = (occurences/total_hours_remaining)*100
-
-        if active_percentage >= x:
-            destinations_pool.append(user)
-   # destinations_pool = destinations_active.keys()
-
-
-    return destinations_pool
 
 def getline(*args):
     retstr = str(args[0])
