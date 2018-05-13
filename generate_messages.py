@@ -11,6 +11,8 @@ DATA_FILE_PREFIX = "data/"
 SEED_FILE_PREFIX = "data/seeds/"
 DATA_FILE_FORMAT = ".twr"
 CONFIGURATION_FILE_FORMAT = ".config"
+COMMS_AGGREGATE_FILE_FORMAT = ".comagg"
+COMMS_USER_FILE_FORMAT = ".comuser"
 message_id_start = DATA_FILE_PREFIX
 overall_network_state = defaultdict(dict)
 def main():
@@ -52,7 +54,7 @@ def main():
     deliveryratiotype = args.deliveryratiotype
     distributiontype = args.distributiontype
     sybil_number = args.sybil_number
-	usethreshold = args.usethreshold
+    usethreshold = args.usethreshold
 
     message_sending_hours = ((end_day - start_day) * 24) - cooldown
 
@@ -144,10 +146,10 @@ def main():
         out_file.write(str(distributiontype) + "\n")
         out_file.write(str(threshold) + "\n")
         out_file.write(str(sybil_number) + "\n")
-		out_file.write(str(usethreshold) + "\n")
+	out_file.write(str(usethreshold) + "\n")
 
     print "Generating: ", current_message_file
-    distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype)
+    distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype, start_day, end_day, city)
     # ID, TTL, Source, Destination, hop, trust
     random.seed(seed)
 
@@ -173,7 +175,7 @@ def main():
                 out_file.write(getline(hour, id, ttl, src, dst, hop, trust))
                 out_file.write("\n")
 
-def get_message_distribution(sending_hours, total_messages, dist_type):
+def get_message_distribution(sending_hours, total_messages, dist_type, start, end, city):
     dictionary = {}
     # Uniform distrbution for now.
     if dist_type == 'uniform':
@@ -184,6 +186,29 @@ def get_message_distribution(sending_hours, total_messages, dist_type):
             dictionary[i] = total_messages / sending_hours
         for i in xrange(0, overflow):
             dictionary[i] += 1
+        return dictionary
+
+    elif dist_type == 'region_sms_based':
+        smscounter = defaultdict(int)
+        h = 0
+        smstotal = 0
+        tot = 0
+        for day in xrange(start, end):
+            commsfile = DATA_FILE_PREFIX + str(city) + "/" +str(day) + COMMS_AGGREGATE_FILE_FORMAT
+            with open(commsfile) as data:
+                for entry in data:
+                    hour, towernum, usernum, callnum, smsnum = entry.split(",")
+                    if h > sending_hours:
+                        break
+                    else:
+                        smscounter[h] = int(smsnum.strip())
+                        smstotal += int(smsnum.strip())
+                    h += 1
+        for i in xrange(0, sending_hours):
+            scaling = float(smscounter[i]) / smstotal
+            dictionary[i] = int(math.ceil(scaling * total_messages))
+            tot += dictionary[i]
+        print "Total messages:", tot
         return dictionary
 
     elif dist_type == 'user_activity_based':
