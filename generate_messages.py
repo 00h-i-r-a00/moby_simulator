@@ -149,7 +149,7 @@ def main():
 	out_file.write(str(usethreshold) + "\n")
 
     print "Generating: ", current_message_file
-    distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype, start_day, end_day, city)
+    distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype, start_day, end_day, city, users_in_pool)
     # ID, TTL, Source, Destination, hop, trust
     random.seed(seed)
 
@@ -175,7 +175,7 @@ def main():
                 out_file.write(getline(hour, id, ttl, src, dst, hop, trust))
                 out_file.write("\n")
 
-def get_message_distribution(sending_hours, total_messages, dist_type, start, end, city):
+def get_message_distribution(sending_hours, total_messages, dist_type, start, end, city, users):
     dictionary = {}
     # Uniform distrbution for now.
     if dist_type == 'uniform':
@@ -190,25 +190,48 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
 
     elif dist_type == 'region_sms_based':
         smscounter = defaultdict(int)
-        h = 0
         smstotal = 0
         tot = 0
         for day in xrange(start, end):
-            commsfile = DATA_FILE_PREFIX + str(city) + "/" +str(day) + COMMS_AGGREGATE_FILE_FORMAT
+            commsfile = DATA_FILE_PREFIX + str(city) + "/" + str(day) + COMMS_AGGREGATE_FILE_FORMAT
             with open(commsfile) as data:
                 for entry in data:
                     hour, towernum, usernum, callnum, smsnum = entry.split(",")
-                    if h > sending_hours:
+                    current_hour = ((day - start) * 24) + int(hour)
+                    if current_hour > sending_hours:
                         break
                     else:
-                        smscounter[h] = int(smsnum.strip())
+                        smscounter[current_hour] = int(smsnum.strip())
                         smstotal += int(smsnum.strip())
-                    h += 1
+        # If this gives a Key Error, there's something wrong with the data.
         for i in xrange(0, sending_hours):
             scaling = float(smscounter[i]) / smstotal
             dictionary[i] = int(math.ceil(scaling * total_messages))
             tot += dictionary[i]
         print "Total messages:", tot
+        return dictionary
+
+    elif dist_type == 'user_sms_based':
+        smscounter = defaultdict(int)
+        smstotal = 0
+        tot = 0
+        for day in xrange(start, end):
+            commsfile = DATA_FILE_PREFIX + str(city) + "/" + str(day) + COMMS_USER_FILE_FORMAT
+            with open(commsfile) as data:
+                for entry in data:
+                    hour, user, callnum, smsnum = entry.split(",")
+                    current_hour = ((day - start) * 24) + int(hour)
+                    if current_hour > sending_hours:
+                        break
+                    else:
+                        if user.strip() in users:
+                            smscounter[current_hour] += int(smsnum.strip())
+                            smstotal += int(smsnum.strip())
+        for i in xrange(0, sending_hours):
+            scaling = float(smscounter[i]) / smstotal
+            dictionary[i] = int(math.ceil(scaling * total_messages))
+            tot += dictionary[i]
+        print "Total Messages:", tot
         return dictionary
 
     elif dist_type == 'user_activity_based':
