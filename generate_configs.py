@@ -36,7 +36,7 @@ deliveryratiotype = [1] #[1,2]
 distributiontype = ['uniform', 'user_activity_based', 'total_users_based', 'region_sms_based']
 #distributiontype = ['total_users_based']
 thresholds = [0, 2, 4, 6, 8, 10, 12]
-max_number = 10 #max number of sybil messages to send
+max_number = 0 #max number of sybil messages to send
 sybil_numbers = [number for number in xrange(1, max_number + 1, 1)]
 #sybil_numbers = [0]
 usethresholds = [True, False]
@@ -88,7 +88,7 @@ def main():
                                                                     json.dump(config, outfile)
 
                                 #keeping track of the parameters used inside configurations to help with graphs
-                                                                with open('configs/' + config["configuration"] + '.txt', 'w') as out:
+                                                                with open('data/configs/' + config["configuration"] + '.txt', 'w') as out:
                                                                     json.dump(config, out)
 
 
