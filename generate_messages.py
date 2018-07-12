@@ -34,7 +34,7 @@ def main():
     parser.add_argument('--messagegenerationtype', help='Original Criteria or Selectively changing sources and destinations', type=int, nargs='?', default=1)
     parser.add_argument('--distributiontype', help='2 types -> "uniform" or "user-activity-based" ; used in conjunction with messagegenerationtype', type=str, nargs='?', default='uniform')
     parser.add_argument('--sybil-number', help='Number of sybil messages to send at each tower.', type=int, nargs='?', default=0)
-    parser.add_argument('--usethreshold', help='Use this flag if you want to run the simulation based on the reduced threshold defined user-set', action='store_true')
+    parser.add_argument('--usethreshold', help='True/False. Value to indicate if you want a particular threshold to be used ', nargs='?', type=str, default='False')
 
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
