@@ -73,8 +73,8 @@ def main():
     distributiontype = str(data.readline().strip())
     threshold = str(data.readline().strip())
     sybil_number = int(data.readline().strip())
-    usethreshold = bool(data.readline().strip())
-
+    usethreshold = data.readline().strip()
+    usethreshold = True if usethreshold == 'True' else False
     message_delay_file = CONFIG_FILE_PREFIX + str(configuration) + '_message_delays.csv'
     file_delay = open(message_delay_file, 'w')
 
