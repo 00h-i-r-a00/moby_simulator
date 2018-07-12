@@ -3,10 +3,10 @@ import json
 import itertools
 import os
 import os.path
-
+import pdb
 ###create a directory to store all the configs######
-if not os.path.exists(os.getcwd() + '/configs'):
-    os.makedirs(os.getcwd() + '/configs')
+if not os.path.exists(os.getcwd() + 'data/configs'):
+    os.makedirs(os.getcwd() + 'data/configs')
 
 ####################################################
 
@@ -14,28 +14,20 @@ achtungs = ["achtung02", "achtung03", "achtung04", "achtung05", "achtung06", "ac
 achtungpool = itertools.cycle(achtungs)
 
 run_number = 0
-#ttls = [12, 24, 36, 48, 60, 72]
-ttls = [72]
-start_days = [20]
-number_of_days = [3]
-#cities = [0, 1, 2, 3]
+ttls = [12, 24, 36, 48, 60, 72]
+start_days = [53]
+number_of_days = [3, 5]
 cities = [0]
-#cooldowns = [12, 24, 36]
-cooldowns = [12]
+cooldowns = [24]
 number_of_messages = [1000]
-#max_queue_size = 200
 #queuesizes = [queuesize for queuesize in xrange(0,max_queue_size + 1,10)]
-#seeds = [3007052]
-queuesizes = [150]
+queuesizes = [0]
 seeds = [244896923]
 messagegenerationtype = [1] #[1,2]
-#percentagehoursactive = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 percentagehoursactive = [50]
 deliveryratiotype = [1] #[1,2]
-#distributiontype = ['uniform', 'user_activity_based']
-#distributiontype = ['uniform', 'user_activity_based', 'total_users_based']
-distributiontype = ['total_users_based']
-thresholds = [12, 24]
+distributiontype = ['uniform', 'user_activity_based', 'total_users_based', 'region_sms_based']
+thresholds = [0, 2, 4, 6, 8, 10, 12]
 max_number = 10 #max number of sybil messages to send
 sybil_numbers = [number for number in xrange(1, max_number + 1, 1)]
 sybil_numbers = [0]
@@ -46,6 +38,7 @@ def main():
     config_ctr = 0
     total_configs = len(ttls) * len(start_days) * len(number_of_days) * len(cities) * len(cooldowns) * len(queuesizes) * len(seeds) * len(messagegenerationtype)* len(percentagehoursactive) * len(deliveryratiotype) * len(distributiontype) * len(thresholds) * len(sybil_numbers) * len(usethresholds)
     print "Cleaning current config files."
+
     for f in achtungs:
         if os.path.isfile(os.getcwd() + '/' + f + '.json'):
             os.remove(f+".json")
@@ -88,9 +81,8 @@ def main():
                                                                     json.dump(config, outfile)
 
                                 #keeping track of the parameters used inside configurations to help with graphs
-                                                                with open('configs/' + config["configuration"] + '.txt', 'w') as out:
+                                                                with open('data/configs/' + config["configuration"] + '.txt', 'w') as out:
                                                                     json.dump(config, out)
-
 
     print config_ctr, "Uploading configs."
     os.system("scp achtung*.json achtung:moby_simulator/")

@@ -1,3 +1,7 @@
 *.csv
 *.msg
 *.twr
+*.png
+*.jpg
+*.json
+data/
