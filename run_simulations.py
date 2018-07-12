@@ -12,11 +12,7 @@ def main():
         cnf = json.loads(conf)
         msg_gen_string = "./generate_messages.py "
         for key, value in cnf.iteritems():
-            if key == 'usethreshold':
-                if value == True:
-                    msg_gen_string += "--" + key + " "
-            else:        
-                msg_gen_string += "--" + key + " " + str(value) + " "
+             msg_gen_string += "--" + key + " " + str(value) + " "
         print msg_gen_string
         os.system(msg_gen_string)
         print cnf

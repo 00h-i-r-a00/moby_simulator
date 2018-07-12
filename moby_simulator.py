@@ -73,8 +73,6 @@ def main():
     distributiontype = str(data.readline().strip())
     threshold = str(data.readline().strip())
     sybil_number = int(data.readline().strip())
-    usethreshold = data.readline().strip()
-    usethreshold = True if usethreshold == 'True' else False
     message_delay_file = CONFIG_FILE_PREFIX + str(configuration) + '_message_delays.csv'
     file_delay = open(message_delay_file, 'w')
 
@@ -93,7 +91,7 @@ def main():
             current_data_file = DATA_FILE_PREFIX + str(city_number) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
             current_data_file_threshold = DATA_FILE_PREFIX + str(city_number) + "_" + str(threshold) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
 
-            if usethreshold:
+            if threshold !=0:
                 current_data_file = current_data_file_threshold
 
             users_this_hour = []

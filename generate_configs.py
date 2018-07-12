@@ -31,7 +31,6 @@ thresholds = [0, 2, 4, 6, 8, 10, 12]
 max_number = 10 #max number of sybil messages to send
 sybil_numbers = [number for number in xrange(1, max_number + 1, 1)]
 sybil_numbers = [0]
-usethresholds = [True, False]
 
 def main():
     config = {}
@@ -56,33 +55,32 @@ def main():
                                                 for val_disttype in distributiontype:
                                                     for val_threshold in thresholds:
                                                         for val_sybilnumber in sybil_numbers:
-                                                            for val_usethresholds in usethresholds:
-                                                                current_achtung = next(achtungpool)
-                                                                config["ttl"] = val_ttl
-                                                                config["start-day"] = val_start
-                                                                config["end-day"] = val_start+val_nod
-                                                                config["city-number"] = val_city
-                                                                config["cooldown"] = val_cd
-                                                                config["number"] = val_nm
-                                                                config["queuesize"] = val_queue
-                                                                config["seed"] = val_seed
-                                                                config["messagegenerationtype"] = val_msgtype
-                                                                config["percentagehoursactive"] = val_active
-                                                                config["deliveryratiotype"] = val_delratio
-                                                                config["distributiontype"] = val_disttype
-                                                                config["configuration"] = str(run_number) + "_" + str(config_ctr)
-                                                                config["threshold"] = val_threshold
-                                                                config["sybil-number"] = val_sybilnumber
-                                                                config["usethreshold"] = val_usethresholds
-                                                                config_ctr += 1
+                                                            current_achtung = next(achtungpool)
+                                                            config["ttl"] = val_ttl
+                                                            config["start-day"] = val_start
+                                                            config["end-day"] = val_start+val_nod
+                                                            config["city-number"] = val_city
+                                                            config["cooldown"] = val_cd
+                                                            config["number"] = val_nm
+                                                            config["queuesize"] = val_queue
+                                                            config["seed"] = val_seed
+                                                            config["messagegenerationtype"] = val_msgtype
+                                                            config["percentagehoursactive"] = val_active
+                                                            config["deliveryratiotype"] = val_delratio
+                                                            config["distributiontype"] = val_disttype
+                                                            config["configuration"] = str(run_number) + "_" + str(config_ctr)
+                                                            config["threshold"] = val_threshold
+                                                            config["sybil-number"] = val_sybilnumber
+                                                            config["usethreshold"] = val_usethresholds
+                                                            config_ctr += 1
 
-                                                                with open(current_achtung+".json", 'a+') as outfile:
-                                                                    outfile.write("!")
-                                                                    json.dump(config, outfile)
+                                                            with open(current_achtung+".json", 'a+') as outfile:
+                                                                outfile.write("!")
+                                                                json.dump(config, outfile)
 
                                 #keeping track of the parameters used inside configurations to help with graphs
-                                                                with open('data/configs/' + config["configuration"] + '.txt', 'w') as out:
-                                                                    json.dump(config, out)
+                                                            with open('data/configs/' + config["configuration"] + '.txt', 'w') as out:
+                                                                json.dump(config, out)
 
     print config_ctr, "Uploading configs."
     os.system("scp achtung*.json achtung:moby_simulator/")

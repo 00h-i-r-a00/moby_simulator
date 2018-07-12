@@ -24,7 +24,7 @@ def main():
     parser.add_argument('--end-day', help='end day of the year', type=int, nargs='?', default=None)
     parser.add_argument('--configuration', help='Configuration and message file id', type=str, nargs='?', default=0)
     parser.add_argument('--city-number', help='City to generate messages for', type=int, nargs='?', default=0)
-    parser.add_argument('--threshold', help='Minimum occourances to be considered a legit user', type=int, nargs='?', default=24)
+    parser.add_argument('--threshold', help='Minimum occourances to be considered a legit user', type=int, nargs='?', default=0)
     parser.add_argument('--cooldown', help='Cooldown hours, messages distributed over total hours - cooldown hours.', type=int, nargs='?', default=12)
     parser.add_argument('--ttl', help='The time to live to be used for the messages', type=int, nargs='?', default=72)
     parser.add_argument('--seed', help='Number to use for random seeding', type=int, nargs='?', default=3007052)
@@ -34,7 +34,6 @@ def main():
     parser.add_argument('--messagegenerationtype', help='Original Criteria or Selectively changing sources and destinations', type=int, nargs='?', default=1)
     parser.add_argument('--distributiontype', help='2 types -> "uniform" or "user-activity-based" ; used in conjunction with messagegenerationtype', type=str, nargs='?', default='uniform')
     parser.add_argument('--sybil-number', help='Number of sybil messages to send at each tower.', type=int, nargs='?', default=0)
-    parser.add_argument('--usethreshold', help='Use this flag if you want to run the simulation based on the reduced threshold defined user-set', action='store_true')
 
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
@@ -54,7 +53,6 @@ def main():
     deliveryratiotype = args.deliveryratiotype
     distributiontype = args.distributiontype
     sybil_number = args.sybil_number
-    usethreshold = args.usethreshold
 
     message_sending_hours = ((end_day - start_day) * 24) - cooldown
 
@@ -102,30 +100,31 @@ def main():
 #########create threshold specific data folders###################################
     foldername = DATA_FILE_PREFIX + str(city) + "_" + str(threshold)
 
-    if not os.path.exists(os.getcwd() + "/" + foldername):
+    if threshold != 0:
+        if not os.path.exists(os.getcwd() + "/" + foldername):
 
-        os.makedirs(os.getcwd() + "/" + foldername)
-        for current_day in xrange(start_day, end_day):
-            for current_hour in xrange(0,24):
+            os.makedirs(os.getcwd() + "/" + foldername)
+            for current_day in xrange(start_day, end_day):
+                for current_hour in xrange(0,24):
 
-                current_output_data_file = foldername + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
-                thresh_out = open(current_output_data_file, 'w')
-                current_data_file = DATA_FILE_PREFIX + str(city) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
-                users_this_hour = []
-                print "Filtering Users : hour %d , day %d " %(current_hour, current_day)
-                with open(current_data_file) as data:
-                    for entry in data:
-                        hour, tower_id, user_ids = entry.split(",")
-                        user_ids = user_ids.strip().split("|")
-                        threshold_users_per_tower = [user for user in user_ids if user in users_in_pool]
+                    current_output_data_file = foldername + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
+                    thresh_out = open(current_output_data_file, 'w')
+                    current_data_file = DATA_FILE_PREFIX + str(city) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
+                    users_this_hour = []
+                    print "Filtering Users : hour %d , day %d " %(current_hour, current_day)
+                    with open(current_data_file) as data:
+                        for entry in data:
+                            hour, tower_id, user_ids = entry.split(",")
+                            user_ids = user_ids.strip().split("|")
+                            threshold_users_per_tower = [user for user in user_ids if user in users_in_pool]
 
-                        if len(threshold_users_per_tower) != 0:
-                            out_row = hour + "," + tower_id + "," + "|".join(threshold_users_per_tower)
-                            thresh_out.write(out_row + "\n")
+                            if len(threshold_users_per_tower) != 0:
+                                out_row = hour + "," + tower_id + "," + "|".join(threshold_users_per_tower)
+                                thresh_out.write(out_row + "\n")
 
-                thresh_out.close()
-    else:
-        print "Folder for the threshold already exists"
+                    thresh_out.close()
+        else:
+            print "Folder for the threshold already exists"
 
 ####################################################################################
 
@@ -146,7 +145,6 @@ def main():
         out_file.write(str(distributiontype) + "\n")
         out_file.write(str(threshold) + "\n")
         out_file.write(str(sybil_number) + "\n")
-	out_file.write(str(usethreshold) + "\n")
 
     print "Generating: ", current_message_file
     distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype, start_day, end_day, city, users_in_pool)
