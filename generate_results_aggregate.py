@@ -8,6 +8,7 @@ import sys
 import os
 import csv
 import numpy as np
+from argparse import RawTextHelpFormatter
 
 mpl.rcParams['lines.linewidth'] = 2
 mpl.rcParams['figure.titlesize'] = 'large'
@@ -47,7 +48,6 @@ colors = ["#596ed8",
 "#df7d77",
 "#698e98"]
 
-
 """
 1. plot delivery ratio
 2. plot queue occupancy
@@ -55,11 +55,11 @@ colors = ["#596ed8",
 4. get maximum queue occupancies
 
 """
-def plot_delivery_ratio(plot_number, configs, args):
-    
+def get_delivery_ratios(plot_number, configs, args, type_):
+
     ###create a folder if it doesn't already exist
-    
-    
+
+
     ##############################################
     ##configs conts filepaths to configs
     configs_content = []
@@ -79,83 +79,111 @@ def plot_delivery_ratio(plot_number, configs, args):
                     hour_list.append(hourctr)
                     hourctr += 1
                     delivery_ratio.append(float(message_delivery_count)/int(args.number[0]))
-    
-    
-    
+
+
+
             with open(f, 'r') as fi:
                 configs_content.append(json.loads(fi.readlines()[0]))
-    
+
             dataset.append((hour_list, delivery_ratio))
-        
+
     config_different_key_values = []
     config_same_key_values = []
-    
+
     for key in configs_content[0].keys():
         x = []
         for config in configs_content:
             x.append(config[key])
-        x = set(x)    
+        x = set(x)
         if len(x) != 1:
             config_different_key_values.append(key)
         else:
             config_same_key_values.append(key)
-        
 
-
-    i=0
-    for data in dataset:
-    #for the corresponding config, get the values corresponding to the
-    #keys that are different, and store it in legend
-        legend = ''
-        for key in config_different_key_values:
-            legend += ' ' + key + ':' + str(configs_content[i][key])
-    
-        plt.plot(data[0], data[1], marker='o', label=legend, color=colors[i])
-        plt.legend(fontsize=10, bbox_to_anchor=(1.1, 0.75), loc='upper left')
-        i+=1
     title = ''
 
     for key in config_same_key_values:
         title += key + ': ' + str(configs_content[0][key]) + '; '
 
-    title = 'Delivery Ratio Vs Hour \n Configuration: ' + title
-    plt.xticks(fontsize=8)
-    plt.yticks(fontsize=8)
-    plt.title(title, fontsize=9)
-    plt.xlabel('Hours', fontsize=9)
-    plt.ylabel('Delivery Ratio', fontsize=9)
-    figname = 'dummy_'
-    figname = figname + '_deliveryratio.png'
-    plt.savefig(figname)
-        
-        
-    
-def plot_queue_occupancy(plot_number, configs, args):   
-    p=0 
+
+
+    if type_ == 'plot':
+
+        i=0
+        for data in dataset:
+        #for the corresponding config, get the values corresponding to the
+        #keys that are different, and store it in legend
+            legend = ''
+            for key in config_different_key_values:
+                legend += ' ' + key + ':' + str(configs_content[i][key])
+
+            plt.plot(data[0], data[1], marker='o', label=legend, color=colors[i])
+            plt.legend(fontsize=10, bbox_to_anchor=(1.1, 0.75), loc='upper left')
+            i+=1
+
+
+        title = 'Delivery Ratio Vs Hour \n Configuration: ' + title
+        plt.xticks(fontsize=8)
+        plt.yticks(fontsize=8)
+        plt.title(title, fontsize=9)
+        plt.xlabel('Hours', fontsize=9)
+        plt.ylabel('Delivery Ratio', fontsize=9)
+        figname = 'dummy_'
+        figname = figname + '_deliveryratio.png'
+        plt.savefig(os.getcwd() + '/' + args.outputfoldername + '/' + figname)
+
+
+    outf = f.open(os.getcwd() + '/' + outputfoldername + '/' + 'maxandmin_del_ratios.csv', 'w')
+
+    colnames = 'Configuration Type, Maximum Delivery Ratio Hour, Maximum Delivery Ratio, Minimum Delivery Ratio Hour, Minimum Delivery Ratio'
+
+    outf.write(title + '\n' + colnames + '\n')
+
+    elif type == 'maximumandfinal':
+
+        for index, config in enumerate(configs):
+            current_del_ratios = dataset[index][1]
+            maximum_del_ratio = max(current_del_ratio)
+            maximum_del_ratio_ind = current_del_ratios.index(max(current_del_ratio))
+            max_hour = dataset[index][0][maximum_del_ratio_ind]
+
+            minimum_del_ratio = min(current_del_ratio)
+            minimum_del_ratio_ind = current_del_ratios.index(min(current_del_ratio))
+            min_hour = dataset[index][0][maximum_del_ratio_ind]
+
+            outf.write(configs + ',' + str(max_hour) + ',' + str(max_del_ratio) + ',' + str(min_hour) + str(min_del_ratio) + '\n')
+
+    outf.close()
+
+
+
+def plot_queue_occupancy(plot_number, configs, args, type_):
+
+    p=0
     num_nan = []
     ##get config contents
     ##get start day and end day from there
     queue_occupancy_files = [fi.replace('configs', 'results').replace('.txt', '_queue_occupancy.csv') for fi in configs]
-    
+
     configs_content = []
-    
+
     for f in configs:
         with open(f, 'r') as fi:
             configs_content.append(json.loads(fi.readlines()[0]))
-    
+
     config_different_key_values = []
     config_same_key_values = []
-    
+
     for key in configs_content[0].keys():
         x = []
         for config in configs_content:
             x.append(config[key])
-        x = set(x)    
+        x = set(x)
         if len(x) != 1:
             config_different_key_values.append(key)
         else:
             config_same_key_values.append(key)
-            
+
     for filename in queue_occupancy_files:
         queue_occupancy = {}
         ##initialization
@@ -165,7 +193,7 @@ def plot_queue_occupancy(plot_number, configs, args):
                 queue_occupancy[key] = []
 
         row_no=0
-    
+
         with open(filename) as csvfile:
             datareader = csv.reader(csvfile, delimiter=',')
             try:
@@ -176,143 +204,192 @@ def plot_queue_occupancy(plot_number, configs, args):
                         queue_occupancy[k].append(int(row[3]))
                         #if no user than row[3] == nan
                     else:
-                        queue_occupancy[k].append(row[3])   
+                        queue_occupancy[k].append(row[3])
             except KeyError as exc:
-                print exc                   
-        queue_occupancies = []      
+                print exc
+        queue_occupancies = []
         hours = [i for i in xrange(72)]
         max_queue_occs = []
         total = 0
         keys = []
-    
-        for key, value in queue_occupancy.iteritems(): 
+
+        for key, value in queue_occupancy.iteritems():
+
             list_of_user_occupancies = queue_occupancy[key]
             isNan = [occ == 'nan' for occ in list_of_user_occupancies]
+
             if all(isNan):
-            
                 max_queue_occs.append(float('NaN'))
             else:
                 try:
                     if 'nan' in list_of_user_occupancies:
-                        list_of_user_occupancies = [value for value in list_of_user_occupancies if value != 'nan']  
+                        list_of_user_occupancies = [value for value in list_of_user_occupancies if value != 'nan']
                         max_queue_occs.append(np.max(list_of_user_occupancies))
                     else:
                         max_queue_occs.append(np.max(list_of_user_occupancies))
-                    
+
                 except TypeError as exc:
                     print exc
-                                    
-    
-        legend = ''
-    
-        for key in config_different_key_values:
-            legend += ' ' + key + ':' + str(configs_content[p][key])
 
-    
-        plt.xticks(fontsize=7)
-        plt.yticks(fontsize=7)
-        y = np.array(max_queue_occs)
-        mask = np.isfinite(np.array(y))
-    
-        num_nan.append(len([i for i in mask if i == False]))
-    
-        y_ = np.array(y)[mask]
-    
-        line, = plt.plot(np.array(hours)[mask], y_,label=legend, color=colors[p], linestyle='--', lw=0.5)
-        plt.plot(np.array(hours), y,label=legend, color=line.get_color(), lw=1)
+         title = ''
+         for key in config_same_key_values:
+             title += key + ': ' + str(configs_content[0][key]) + '; '
 
-        plt.legend(fontsize=7,  bbox_to_anchor=(1.1, 1.05))
-        p +=1 
-    
-    title = ''
-    for key in config_same_key_values:
-        title += key + ': ' + str(configs_content[0][key]) + '; '
 
-    plt.title(title, fontsize=7)
-    figname = 'dummy_'
-    figname = figname + '_queuecoccupancy.png'
-    plt.savefig(figname)
-    
+
+        if type_ == 'plot':
+            legend = ''
+
+            for key in config_different_key_values:
+                legend += ' ' + key + ':' + str(configs_content[p][key])
+
+
+            plt.xticks(fontsize=7)
+            plt.yticks(fontsize=7)
+            y = np.array(max_queue_occs)
+            mask = np.isfinite(np.array(y))
+
+            num_nan.append(len([i for i in mask if i == False]))
+
+            y_ = np.array(y)[mask]
+
+            line, = plt.plot(np.array(hours)[mask], y_,label=legend, color=colors[p], linestyle='--', lw=0.5)
+            plt.plot(np.array(hours), y,label=legend, color=line.get_color(), lw=1)
+
+            plt.legend(fontsize=7,  bbox_to_anchor=(1.1, 1.05))
+            p +=1
+
+
+            plt.title(title, fontsize=7)
+            figname = 'dummy_'
+            figname = os.getcwd() + '/' + figname + '_queuecoccupancy.png'
+            plt.savefig(figname)
+
+        elif type_ == 'maximum':
+            outf = os.getcwd() + '/' + args.outputfoldername + '/' + '_maximum_queue_occupancy.txt'
+
+        with open(outf, 'w') as f:
+            f.write("Maximum Queue Occupancy: %d", max(max_queue_occs))
+
 def plot_active_users(start_day, end_day):
     pass
-    
-def get_maximum_delivery_ratios(plot_number, configs, args):
-    pass
-    #for each config
-    #read all the delivery ratios, get the maximum
-    
-def get_maximum_queue_occupancies(plot_number, configs):
-    pass
-    ##for each config
-    ##read all the queue occupancies, get the maximum
 
-def get_average_delays(plot_number, configs, args):
+
+def get_delays(plot_number, configs, args, type_):
+
     configs_content = []
+
     for f in configs:
         with open(f, 'r') as fi:
             configs_content.append(json.loads(fi.readlines()[0]))
-    
+
     config_different_key_values = []
     config_same_key_values = []
-    
+
     for key in configs_content[0].keys():
+
         x = []
         for config in configs_content:
             x.append(config[key])
-        x = set(x)    
+        x = set(x)
         if len(x) != 1:
             config_different_key_values.append(key)
         else:
             config_same_key_values.append(key)
-    
+
     average_delays = []
     cellText = []
-    
+
     for fi in configs:
+
         delays = []
         fi_ = fi.replace('configs', 'results').replace('.txt', '_message_delays.csv')
         with open(fi_) as csvfile:
-            datareader = csv.reader(csvfile, delimiter=',')         
+            datareader = csv.reader(csvfile, delimiter=',')
             for row in datareader:
                 delays.append(int(row[1]))
-            
+
             average_delay = sum(delays)/len(delays)
             celltext = ''
             with open(fi, 'r') as f:
                 config_content = json.loads(f.readlines()[0])
             for key in config_different_key_values:
                 celltext += str(key) + ": " + str(config_content[key]) + "; "
-            
+
             cellText.append([celltext, average_delay])
-    
-    cellText.sort(key = lambda x: x[1])            
-    fig, ax = plt.subplots()
-    fig.patch.set_visible(False)
-    ax.axis('off')
-    ax.axis('tight')
 
-    fig.tight_layout()
 
-    colLabels = ['Configuration Name', 'Average Delay']
-    the_table = ax.table(cellText=cellText, colLabels=colLabels, loc='center')
-    the_table.auto_set_font_size(False)
-    the_table.set_fontsize(10)
-    the_table.scale(1, 5)
-    #the_table.set_title('Table')
-    
-    plt.savefig('1000messages.png')            
-    
-    title = ''
-    for key in config_same_key_values:
-		title += str(key) + ': ' + str(configs_content[0][key]) + "; "
-    
-    print title
-    
+    cellText.sort(key = lambda x: x[1])
+
+
+    if type_ == 'averagedelaystable':
+
+        tabledata = ''
+        for row in cellText:
+            tabledata += row[0] + ',' + row[1] + '\n'
+
+         colLabels = 'Configuration Name,Average Delay'
+
+
+        title = ''
+        for key in config_same_key_values:
+	    title += str(key) + ': ' + str(configs_content[0][key]) + "; "
+
+
+        tabledata = title + '\n' + colLabels + '\n' + tabledata
+
+
+        outf = os.getcwd() + '/' + args.outputfolder + '/' + 'table_messagedeliverytimes.csv'
+
+        with open(outf, 'w') as f:
+            f.write(tabledata)
+
+        print "Message Delivery Times/Delays written in the table: " + outf
+
+
+    elif type_ == 'maxandmin'
+
+        ind = 1
+
+        for row in cellText:
+
+            if ind == 1:
+
+                minimum_value = row[1]
+                minimum_config = row[0]
+
+            elif ind == len(cellText):
+
+                maximum_value = row[1]
+                maximum_config = row[0]
+
+        ind += 1
+
+        colLabels = 'Configuration Name,Average Delay'
+
+
+        title = ''
+        for key in config_same_key_values:
+	    title += str(key) + ': ' + str(configs_content[0][key]) + "; "
+
+
+        outf2 = os.getcwd() + '/' + args.outputfolder + '/' + 'minmax_messagedeliverytimes.csv'
+
+        with open(outf2, 'w') as f:
+            f.write(title + '\n')
+            f.write('Minimum Message Delivery Time: ' + str(minimum_value) + ' at config: ' + str(minimum_config) + '\n')
+            f.write('Maximum Message Delivery Time: ' + str(maximum_value) + ' at config: ' + str(maximum_config) + '\n')
+
+
+        print "Minimum and Maximum Message Delivery Times/Delays in the file: " + outf2
+
+
 def get_configs(args):
+
     number_of_messages = args.number
     start_days = args.start_days
     number_of_days = [3]
-    
+
     cities = args.city_numbers
     cooldowns =  args.cooldowns
     thresholds = args.thresholds
@@ -323,7 +400,7 @@ def get_configs(args):
     messagegenerationtype = args.messagegenerationtype
     deliveryratiotype = args.deliveryratiotype
     distributiontype = args.distributiontype
-    
+
     configs_to_plot = []
     configs_ = 0
     for val_ttl in ttls:
@@ -353,11 +430,11 @@ def get_configs(args):
                                                         config["deliveryratiotype"] = val_delratio
                                                         config["distributiontype"] = val_disttype
                                                         config["threshold"] = val_threshold
-                                            
+
                                                         configs_to_plot.append(config)
                                                         configs_ += 1
-    
-                                                            
+
+
     foldername = os.getcwd() + '/' + args.foldername + '/configs/'
     files = os.listdir(foldername)
     file_paths = [foldername + f for f in files]
@@ -367,23 +444,23 @@ def get_configs(args):
         with open(fi) as in_:
             config = json.load(in_)
             configs_total.append(config)
-    
+
     config_files_to_plot = []
     for index, config1 in enumerate(configs_total):
         for config2 in configs_to_plot:
             z = config1.pop('configuration', None)
-            
+
             if config1 == config2:
                 config_files_to_plot.append(file_paths[index])
                 break
-                                
-    return config_files_to_plot         
-    
-    
-        
+
+    return config_files_to_plot
+
+
+
 def main():
-    
-    parser = argparse.ArgumentParser(description='Moby message generation script script.')
+
+    parser = argparse.ArgumentParser(description='Moby message generation script script.', formatter_class=RawTextHelpFormatter )
     parser.add_argument('--number', help='Number of messages to generate', type=int, nargs='+')
     parser.add_argument('--start-days', help='start day of the year', type=int, nargs='+')
     parser.add_argument('--end-day', help='end day of the year', type=int, nargs='+')
@@ -401,36 +478,57 @@ def main():
     parser.add_argument('--single', help='Use this flag to plot everything on a single plot', action='store_true')
     parser.add_argument('--multiple', help='Use this flag to plot everything on multiple plots', action='store_true')
     parser.add_argument('--useconfigs', help='Use this flag to specify specific configurations to plot', action='store_true')
-    parser.add_argument('--plottypes', help='Specify plot types', nargs='+', type=int)
     parser.add_argument('--foldername', help='Name of the folder with all the results', nargs='?', type=str)
-    
+    parser.add_argument('--plottypes', help='Specify plot types. \n 1. get delivery ratio plots' +
+                                                                 '\n 2. get queue occupancy plots '
+                                                                 '\n 3. get maximum and final delivery ratios' +
+                                                                 '\n 4. get maximum queue occupancies' +
+                                                                 '\n 5. get average delays in a table' +
+                                                                 '\n 6. get minimum and maximum delays'
+                                                                 , nargs='+', type=int)
+    parser.add_argument('--outputfolder', type=str, nargs='?')
+
     args = parser.parse_args(sys.argv[1:])
     print args
-    
+
     useconfigs = args.useconfigs
     plottypes = args.plottypes
-    
+
     if useconfigs:
-        #contains the paths of all the configs to plot  
+        #contains the paths of all the configs to plot
         configs = [os.getcwd() + '/' + args.foldername + '/configs/' + f for f in args.configurations]
-    
+
     else:
         #contains the paths of all the configs to plot
         configs = get_configs(args)
-    
-        
-    plot_functions = {
-                      1: plot_delivery_ratio, 
-                      2: plot_queue_occupancy, 
-                      3: get_maximum_delivery_ratios,
-                      4: get_maximum_queue_occupancies,
-                      5: get_average_delays
-                      }
-                            
+
+
+    for i in xrange(1, 6):
+
+
     for plot in plottypes:
-        plot_number = (args.single, args.multiple)
-        plot_functions[plot](plot_number, configs, args)
-        
-            
+        num_of_plots = (args.single, args.multiple)
+
+        if plot == 1:
+            get_delivery_ratios(num_of_plots, configs, args, 'plot')
+
+        elif plot == 2:
+            get_queue_occupancy(num_of_plots, configs, args, 'plot')
+
+        elif plot == 3:
+            get_delivery_ratios(num_of_plots, configs, args, 'maximumandfinal')
+
+        elif plot == 4:
+            get_queue_occupancy(num_of_plots, configs, args, 'maximum')
+
+        elif plot == 5:
+            get_delays(num_of_plots, configs, args, 'averagedelaystable')
+
+        elif plot == 6:
+            get_delays(num_of_plots, configs, args, 'maxandmin')
+
+
+
+
 if __name__ == "__main__":
     main()
