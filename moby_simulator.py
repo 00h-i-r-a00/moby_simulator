@@ -246,9 +246,9 @@ def perform_message_exchanges_with_queue(users, queuesize, current_day, current_
             mq1 = message_queue[u1]
             mq2 = message_queue[u2]
             # In 1 but not 2
-            mq12 = list(set(mq1.keys()).difference(set(mq2.keys())))
+            mq12 = mq1.keys() - mq2.keys()
             # In 2 but not 1
-            mq21 = list(set(mq2.keys()).difference(set(mq1.keys())))
+            mq21 = mq2.keys() - mq1.keys()
             for key in mq12:
                 if len(mq2.keys()) < queuesize:
                     mq2[key] = mq1[key]
@@ -261,7 +261,6 @@ def perform_message_exchanges_with_queue(users, queuesize, current_day, current_
                     break
             queue_occupancy[queue_key][u1] = len(mq1.keys())
             queue_occupancy[queue_key][u2] = len(mq2.keys())
-
     return len(dirty) > 0
 
 
