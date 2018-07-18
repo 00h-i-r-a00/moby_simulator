@@ -5,8 +5,8 @@ import os
 import os.path
 import pdb
 ###create a directory to store all the configs######
-if not os.path.exists(os.getcwd() + 'data/configs'):
-    os.makedirs(os.getcwd() + 'data/configs')
+if not os.path.exists(os.getcwd() + '/data/configs'):
+    os.makedirs(os.getcwd() + '/data/configs')
 
 ####################################################
 
@@ -14,19 +14,21 @@ achtungs = ["achtung02", "achtung03", "achtung04", "achtung05", "achtung06", "ac
 achtungpool = itertools.cycle(achtungs)
 
 run_number = 0
-ttls = [12, 24, 36, 48, 60, 72]
+#ttls = [12, 24, 36, 48, 60, 72]
+ttls = [12, 24]
 start_days = [53]
 number_of_days = [3, 4, 5]
 cities = [0]
 cooldowns = [24]
-number_of_messages = [1000]
+number_of_messages = [30000]
 #queuesizes = [queuesize for queuesize in xrange(0,max_queue_size + 1,10)]
 queuesizes = [0]
 seeds = [244896923]
 messagegenerationtype = [1] #[1,2]
 percentagehoursactive = [50]
 deliveryratiotype = [1] #[1,2]
-distributiontype = ['uniform', 'user_activity_based', 'total_users_based', 'region_sms_based']
+#distributiontype = ['uniform', 'user_activity_based', 'total_users_based', 'region_sms_based']
+distributiontype = ['region_sms_based']
 thresholds = [0, 2, 4, 6, 8, 10, 12]
 max_number = 10 #max number of sybil messages to send
 sybil_numbers = [number for number in xrange(1, max_number + 1, 1)]
@@ -35,7 +37,7 @@ sybil_numbers = [0]
 def main():
     config = {}
     config_ctr = 0
-    total_configs = len(ttls) * len(start_days) * len(number_of_days) * len(cities) * len(cooldowns) * len(queuesizes) * len(seeds) * len(messagegenerationtype)* len(percentagehoursactive) * len(deliveryratiotype) * len(distributiontype) * len(thresholds) * len(sybil_numbers) * len(usethresholds)
+    total_configs = len(ttls) * len(start_days) * len(number_of_days) * len(cities) * len(cooldowns) * len(queuesizes) * len(seeds) * len(messagegenerationtype)* len(percentagehoursactive) * len(deliveryratiotype) * len(distributiontype) * len(thresholds) * len(sybil_numbers)
     print "Cleaning current config files."
 
     for f in achtungs:
@@ -71,7 +73,6 @@ def main():
                                                             config["configuration"] = str(run_number) + "_" + str(config_ctr)
                                                             config["threshold"] = val_threshold
                                                             config["sybil-number"] = val_sybilnumber
-                                                            config["usethreshold"] = val_usethresholds
                                                             config_ctr += 1
 
                                                             with open(current_achtung+".json", 'a+') as outfile:
