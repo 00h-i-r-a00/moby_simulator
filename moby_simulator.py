@@ -73,7 +73,7 @@ def main():
     distributiontype = str(data.readline().strip())
     threshold = str(data.readline().strip())
     sybil_number = int(data.readline().strip())
-    message_delay_file = CONFIG_FILE_PREFIX + str(configuration) + '_message_delays.csv'
+    message_delay_file = RESULT_FILE_PREFIX + str(configuration) + '_message_delays.csv'
     file_delay = open(message_delay_file, 'w')
 
     for entry in data:
