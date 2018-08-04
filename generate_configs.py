@@ -25,8 +25,8 @@ first day of each week in the year 2009 i.e the days which represent all Mondays
 #ttls = [72]
 #ttl needs to be infinite which means it needs to be as much as the duration of the simulation
 
-#start_days = [4, 11, 18, 25, 32, 39, 46, 53, 60, 67, 74, 81, 88, 95, 102, 109, 116, 123, 130, 137, 144, 151, 158, 165, 172, 179, 186, 193, 200, 207, 214, 221, 228, 235, 242, 249, 256, 263, 270, 277,284, 291, 298, 305, 312, 319, 326, 333, 340, 347, 354, 361]
-start_days = [4, 11, 18, 25, 32]
+start_days = [4, 11, 18, 25, 32, 39, 46, 53, 60, 67, 74, 81, 88, 95, 102, 109, 116, 123, 130, 137, 144, 151, 158, 165, 172, 179, 186, 193, 200, 207, 214, 221, 228, 235, 242, 249, 256, 263, 270, 277,284, 291, 298, 305, 312, 319, 326, 333, 340, 347, 354, 361]
+#start_days = [4, 11, 18, 25, 32]
 number_of_days = [3, 4, 5]
 cities = [0]
 cooldowns = [24]
@@ -37,8 +37,8 @@ seeds = [244896923]
 messagegenerationtype = [1] #[1,2]
 percentagehoursactive = [50]
 deliveryratiotype = [1] #[1,2]
-#distributiontype = ['uniform', 'user_activity_based', 'total_users_based', 'region_sms_based']
-distributiontype = ['region_sms_based']
+distributiontype = ['uniform', 'user_activity_based', 'total_users_based', 'region_sms_based']
+#distributiontype = ['region_sms_based']
 #thresholds = [0, 2, 4, 6, 8, 10, 12]
 #infinite since we are intially taking an estimate of the possible PDRs
 thresholds = [0, 2, 4, 6, 8, 10, 12]
