@@ -118,8 +118,8 @@ def main():
 				"""
 				# print "Added: ", transitions_added
 				# print "Removed: ", transitions_removed
-			
-				
+
+
 				print("Users in all towers(double counted):", len(users_this_hour))
 				message_hour = current_hour + (24 * (current_day - start_day))
 				for msg in message_queue_map[message_hour]:
@@ -156,7 +156,7 @@ def main():
 							dirty_nodes += users_in_tower
 						else:
 							pass
-	
+
 				for user, mq in message_queue.items():
 					dellist = []
 					for key, msg in mq.items():
@@ -176,20 +176,20 @@ def main():
 								dellist.append(msg.id)
 					for id in dellist:
 						del message_queue[user][id]
-	
+
 				for key, value in network_state_new.items():
 					network_state_old[key] = value
 				dirty_nodes = []
 				total_messages = total_messages1 if deliveryratiotype == 1 else total_messages2
-				
+
 				with open(result_file, "a+") as out_file:
 					dlim = ','
 					out_file.write(getline(current_day, current_hour, len(users_this_hour), len(dirty_nodes), message_delivery_count, total_messages))
 					out_file.write("\n")
-					
+
 			except Exception as exc:
 				print("Exception", exc)
-						
+
 	with open(result_file_queue_occupancy, "w") as outfile:
 		for day in list(range(start_day, end_day)):
 			for hour in list(range(0,24)):
@@ -200,6 +200,8 @@ def main():
 	for user, msgids in message_delivered.items():
 		for msgid in msgids:
 			file_delay.write(str(msgid) + "," + str(message_delays[msgid]) + "\n")
+
+        print ("Simulation Done!")
 
 def getline(*args):
 	retstr = str(args[0])
