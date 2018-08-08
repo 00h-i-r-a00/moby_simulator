@@ -10,7 +10,7 @@ SLEEP_TIME = 1 * 60
 
 def main():
     hostname = socket.gethostname()
-    print hostname
+    print (hostname)
     with open (hostname+".json") as configs:
         confs = configs.readline().strip().split("!")
         confs = confs[1:]
@@ -28,11 +28,11 @@ def main():
         for conf in confs_subset:
             cnf = json.loads(conf)
             msg_gen_string = "./generate_messages.py "
-            for key, value in cnf.iteritems():
+            for key, value in cnf.items():
                  msg_gen_string += "--" + key + " " + str(value) + " "
-            print msg_gen_string
+            print (msg_gen_string)
             os.system(msg_gen_string)
-            print cnf
+            print (cnf)
             cnf_id = str(cnf["configuration"])
             os.system("nohup ./moby_simulator.py --configuration " + cnf_id + " > data/logs/"+ cnf_id+".nohup" +"&")
         time.sleep(SLEEP_TIME)
