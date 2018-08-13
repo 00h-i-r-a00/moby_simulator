@@ -14,7 +14,10 @@ import pdb
 import seaborn as sns
 import pandas as pd
 from math import isnan
+<<<<<<< HEAD
 from collections import defaultdict
+=======
+>>>>>>> aa8721ca9cec59a980ff7130096e8e59e1fc85a3
 
 mpl.rcParams['lines.linewidth'] = 2
 mpl.rcParams['figure.titlesize'] = 'large'
@@ -77,7 +80,11 @@ def get_config_similarity(configs_content):
 	"""
 	same = []
 	different = []
+<<<<<<< HEAD
 
+=======
+	
+>>>>>>> aa8721ca9cec59a980ff7130096e8e59e1fc85a3
 	for key in configs_content[0].keys():
 		
 		x = []
@@ -529,6 +536,7 @@ def get_configs(args):
 				break
 
 	return config_files_to_plot
+<<<<<<< HEAD
 	
 def extract_configs(configs, params_to_extract):
 	"""
@@ -611,8 +619,153 @@ def get_heatmap(configs, args):
 	plot_heatmap(avg_delay_dict, configs, args, 'Average Delay')
 	plot_heatmap(max_pdr_dict, configs, args, 'Packet Delivery Ratio')
 	#plot_heatmap(max_queue_occupancy, configs, args, 'Queue Occupancy')
+=======
+def extract_configs(configs, params_to_extract):
+	"""
+	params_to_extract = dictionary containing param: values pairs whose corresponding configs need to be extractedf
+
+	"""
+	new_configs = []
+
+	for conf in configs:
+		with open(conf, 'r') as f:
+			config_content = json.loads(f.readlines()[0])
+
+		for key, value in params_to_extract.items():
+			if config_content[key] == value:
+				new_configs.append(conf)
+
+	return new_configs
+
+def plot_heatmap(dict_to_heatmap, configs, title):
+
+	#dict_to_heatmap contains keys as start days and values as their corresponding metric values to plot
+	columns_headings = []
+	values = []
+
+	#one conf should correspond with one start-day
+	#this function is meant to plot a heatmap of 1 week only
+	#dict_to_heatmap contains start_day --> average delay mappings
+	for cons in configs:
+		with open(cons, 'r') as f:
+			conf = json.loads(f.readlines()[0])
+
+		start_day = conf['start-day']
+		columns_headings.append(start_day)
+		values.append(dict_to_heatmap[start_day])
+	
+	columns_headings = [str(i) for i in columns_headings]
+	#pdb.set_trace()
+	df = pd.DataFrame(values, columns = [title])
+	
+	corr_matrix = df.corr()
+
+	sns.heatmap(corr_matrix, cmap='PRGn')
+	
 
 
+def get_heatmap(configs, args):
+
+	start_days = args.start_days
+	avg_delay_dict = {}
+	max_pdr_dict = {}
+	max_queue_occupancy = {}
+	
+	for start_day in start_days:
+		params_to_extract = {"start-day": start_day}
+		configs_new = extract_configs(configs, params_to_extract)
+		#TODO: see how this is returned; need to change if there is an error
+		avg_delay_dict[start_day] = get_delays('single', configs_new, args, 'heatmap')[0]
+		max_pdr_dict[start_day] =  get_delivery_ratios('single', configs_new, args, 'heatmap')
+		max_queue_occupancy[start_day] = get_queue_occupancy('single', configs_new, args, 'heatmap')
+		
+	plot_heatmap(avg_delay_dict, configs, 'Average Delay')
+	plot_heatmap(max_pdr_dict, configs, 'Packet Delivery Ratio')
+	plot_heatmap(max_queue_occupancy, configs, 'Queue Occupancy')
+
+
+def get_embedded_graphs(configs, args):
+	overall_best_pdr = []
+	overall_max_queue = []
+	
+	start_days = args.start_days
+	delays = []
+	pdrs = []
+	queue_occs = []
+	maxPDR= 0 
+	maxQueue=0
+	maxDelay = 0
+
+	#to be used for subplots
+	fig, axs = plt.subplots(len(start_days), 4)
+	i=0
+		
+	pdr_xlim_min = []
+	pdr_xlim_max = []
+	pdr_ylim_max = []
+	pdr_ylim_min = []
+	
+	qu_ylim_max = []
+	qu_ylim_min = []
+	
+	for start_day in start_days:
+		
+		params_to_extract = {"start-day": start_day}
+		configs_new = extract_configs(configs, params_to_extract)
+
+		dataset = get_delivery_ratios('single', configs_new, args, 'pdrvalues')
+		
+		axs[i, 0].plot(dataset[0][0], dataset[0][1])
+		pdr_xlim_min.append(min(dataset[0][0]))
+		pdr_xlim_max.append(max(dataset[0][0]))
+		pdr_ylim_min.append(min(dataset[0][1]))
+		pdr_ylim_max.append(max(dataset[0][1]))
+
+		maxPDR = max(dataset[0][1])
+		hours_per_configuration, max_queue_occs_per_configuration = get_queue_occupancy('single', configs_new, args, 'values')
+		overall_best_pdr.append(maxPDR)
+		########################process queue occupancies########################################
+		
+		
+		endday = get_attribute_value_of_config(configs_new[0], 'end-day')
+		overall_max_queue.append(maxQueue)
+		for index, queue_occupancies in enumerate(max_queue_occs_per_configuration):
+		
+			queue_occupancies_without_nan = [ind for ind in queue_occupancies if isinstance(ind, np.int64)]
+			queue_occupancies_without_nan = [ind for ind in queue_occupancies if ind != 'nan']
+			queue_occupancies_without_nan = [ind for ind in queue_occupancies if isnan(ind) != True]
+		
+			maxQueue = max(queue_occupancies_without_nan)
+			
+			
+			if len(queue_occupancies) == 0:
+				qu_ylim_min.append(0)
+				qu_ylim_max.append(0)
+				
+			else:
+				qu_ylim_min.append(min(queue_occupancies_without_nan))
+				qu_ylim_max.append(max(queue_occupancies_without_nan))
+>>>>>>> aa8721ca9cec59a980ff7130096e8e59e1fc85a3
+
+		 	hours = hours_per_configuration[index]
+			y = np.array(queue_occupancies)
+			mask = np.isfinite(np.array(y))
+			y_ = np.array(y)[mask]
+	
+			line, = axs[i, 1].plot(np.array(hours)[mask], y_, color=colors[index], linestyle='--', lw=0.5)
+				
+			axs[i, 1].plot(np.array(hours), y, color=line.get_color(), lw=1)			
+				
+		###processing average delays##############################################################################3
+		
+		
+		delays = get_delays('single', configs_new, args, 'delay_values')
+		maxDelay = max(delays)
+		
+		x = np.sort(delays)
+		y = np.arange(len(delays))/float(len(delays))
+
+<<<<<<< HEAD
 def get_embedded_graphs(configs, args):
 	overall_best_pdr = []
 	overall_max_queue = []
@@ -693,6 +846,8 @@ def get_embedded_graphs(configs, args):
 		x = np.sort(delays)
 		y = np.arange(len(delays))/float(len(delays))
 
+=======
+>>>>>>> aa8721ca9cec59a980ff7130096e8e59e1fc85a3
 		axs[i, 2].plot(x, y)
 		
 		
