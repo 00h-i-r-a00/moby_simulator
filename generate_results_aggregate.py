@@ -14,6 +14,7 @@ import pdb
 import seaborn as sns
 import pandas as pd
 from math import isnan
+from collections import defaultdict
 
 mpl.rcParams['lines.linewidth'] = 2
 mpl.rcParams['figure.titlesize'] = 'large'
@@ -76,7 +77,7 @@ def get_config_similarity(configs_content):
 	"""
 	same = []
 	different = []
-	
+
 	for key in configs_content[0].keys():
 		
 		x = []
@@ -528,6 +529,7 @@ def get_configs(args):
 				break
 
 	return config_files_to_plot
+	
 def extract_configs(configs, params_to_extract):
 	"""
 	params_to_extract = dictionary containing param: values pairs whose corresponding configs need to be extractedf
@@ -535,61 +537,80 @@ def extract_configs(configs, params_to_extract):
 	"""
 	new_configs = []
 
+	num_params = len(params_to_extract.keys())
+	
+	
 	for conf in configs:
+		num_keys_present = 0
 		with open(conf, 'r') as f:
 			config_content = json.loads(f.readlines()[0])
 
 		for key, value in params_to_extract.items():
-			if config_content[key] == value:
-				new_configs.append(conf)
-
+			if config_content[key] == value:			
+				num_keys_present += 1
+				
+		
+		if num_keys_present == num_params:
+			new_configs.append(conf)
+			num_keys_present = 0
+	
 	return new_configs
 
-def plot_heatmap(dict_to_heatmap, configs, title):
+def plot_heatmap(dict_to_heatmap, configs, args, title):
 
 	#dict_to_heatmap contains keys as start days and values as their corresponding metric values to plot
-	columns_headings = []
-	values = []
+	# ~ columns_headings = []
+	# ~ values = []
 
 	#one conf should correspond with one start-day
 	#this function is meant to plot a heatmap of 1 week only
 	#dict_to_heatmap contains start_day --> average delay mappings
-	for cons in configs:
-		with open(cons, 'r') as f:
-			conf = json.loads(f.readlines()[0])
+	# ~ for cons in configs:
+		# ~ with open(cons, 'r') as f:
+			# ~ conf = json.loads(f.readlines()[0])
 
-		start_day = conf['start-day']
-		columns_headings.append(start_day)
-		values.append(dict_to_heatmap[start_day])
+		# ~ start_day = conf['start-day']
+		# ~ columns_headings.append(start_day)
+		# ~ values.append(dict_to_heatmap[start_day])
 	
-	columns_headings = [str(i) for i in columns_headings]
-	#pdb.set_trace()
-	df = pd.DataFrame(values, columns = [title])
+	# ~ columns_headings = [str(i) for i in columns_headings]
+	# ~ #pdb.set_trace()
+	# ~ df = pd.DataFrame(values, columns = [title])
 	
-	corr_matrix = df.corr()
+	# ~ corr_matrix = df.corr()
 
-	sns.heatmap(corr_matrix, cmap='PRGn')
+	# ~ sns.heatmap(corr_matrix, cmap='PRGn')
 	
+	
+	###create a matrix#####3
+	pdb.set_trace()
+	df = pd.DataFrame(dict_to_heatmap, index=args.start_days)
+	fig = plt.figure(figsize=(12,12))
+	r = sns.heatmap(df, cmap='BuPu')
+	r.set_title("Heatmap for " + title)
+	r.set_ylabel('First Day of the Week')
+	r.set_xlabel('Number of Days for which Simulation was run')
+	plt.show()
 
 
 def get_heatmap(configs, args):
 
 	start_days = args.start_days
-	avg_delay_dict = {}
-	max_pdr_dict = {}
-	max_queue_occupancy = {}
+	avg_delay_dict = defaultdict(list)
+	max_pdr_dict = defaultdict(list)
+	max_queue_occupancy = defaultdict(list)
 	
-	for start_day in start_days:
-		params_to_extract = {"start-day": start_day}
-		configs_new = extract_configs(configs, params_to_extract)
-		#TODO: see how this is returned; need to change if there is an error
-		avg_delay_dict[start_day] = get_delays('single', configs_new, args, 'heatmap')[0]
-		max_pdr_dict[start_day] =  get_delivery_ratios('single', configs_new, args, 'heatmap')
-		max_queue_occupancy[start_day] = get_queue_occupancy('single', configs_new, args, 'heatmap')
-		
-	plot_heatmap(avg_delay_dict, configs, 'Average Delay')
-	plot_heatmap(max_pdr_dict, configs, 'Packet Delivery Ratio')
-	plot_heatmap(max_queue_occupancy, configs, 'Queue Occupancy')
+	for num_day in [3, 4, 5]:
+		for start_day in start_days:
+			params_to_extract = {"start-day": start_day, "end-day": int(start_day) + num_day}
+			configs_new = extract_configs(configs, params_to_extract)
+			avg_delay_dict[str(num_day)].append(get_delays('single', configs_new, args, 'heatmap')[0])
+			max_pdr_dict[str(num_day)].append(get_delivery_ratios('single', configs_new, args, 'heatmap'))
+			max_queue_occupancy[str(num_day)].append(get_queue_occupancy('single', configs_new, args, 'heatmap'))
+	
+	plot_heatmap(avg_delay_dict, configs, args, 'Average Delay')
+	plot_heatmap(max_pdr_dict, configs, args, 'Packet Delivery Ratio')
+	#plot_heatmap(max_queue_occupancy, configs, args, 'Queue Occupancy')
 
 
 def get_embedded_graphs(configs, args):
