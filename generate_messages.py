@@ -33,7 +33,7 @@ def main():
     parser.add_argument('--deliveryratiotype', help='1 if total_messages == upto that hour; 2 if total_messages == total number of messages in all hours', type=int, nargs='?', default=1)
     parser.add_argument('--messagegenerationtype', help='Original Criteria or Selectively changing sources and destinations', type=int, nargs='?', default=1)
     parser.add_argument('--distributiontype', help='2 types -> "uniform" or "user-activity-based" ; used in conjunction with messagegenerationtype', type=str, nargs='?', default='uniform')
-    parser.add_argument('--sybil-number', help='Number of sybil messages to send at each tower.', type=int, nargs='?', default=0)
+    parser.add_argument('--dos-number', help='Number of dos messages to send at each tower.', type=int, nargs='?', default=0)
 
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
@@ -52,7 +52,7 @@ def main():
     message_generation_type = args.messagegenerationtype
     deliveryratiotype = args.deliveryratiotype
     distributiontype = args.distributiontype
-    sybil_number = args.sybil_number
+    dos_number = args.dos_number
 
     message_sending_hours = ((end_day - start_day) * 24) - cooldown
 
@@ -144,7 +144,7 @@ def main():
         out_file.write(str(deliveryratiotype) + "\n")
         out_file.write(str(distributiontype) + "\n")
         out_file.write(str(threshold) + "\n")
-        out_file.write(str(sybil_number) + "\n")
+        out_file.write(str(dos_number) + "\n")
 
     print "Generating: ", current_message_file
     distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype, start_day, end_day, city, users_in_pool)
