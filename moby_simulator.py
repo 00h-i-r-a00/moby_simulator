@@ -64,6 +64,7 @@ def main():
 	seed = int(data.readline().strip())
 	queuesize = int(data.readline().strip())
 
+        numdays = end_day - start_day
 #adding these two just for the sake of consistency
 
 
@@ -89,8 +90,8 @@ def main():
 		for current_hour in list(range(0,24)):
 			network_state_new = defaultdict(set)
 			current_data_file = DATA_FILE_PREFIX + str(city_number) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
-			current_data_file_threshold = DATA_FILE_PREFIX + str(city_number) + "_" + str(threshold) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
-
+			#current_data_file_threshold = DATA_FILE_PREFIX + str(city_number) + "_" + str(threshold) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
+                        current_data_file_threshold = DATA_FILE_PREFIX + str(city_number) + "_" + str(threshold) + "/" + str(start_day) + "/" + str(numdays) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
 			if threshold != "0":
 				current_data_file = current_data_file_threshold
 
