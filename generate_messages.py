@@ -241,12 +241,5 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
 
         return dictionary
 
-def getline(*args):
-    retstr = str(args[0])
-    dlim = ','
-    for i in args[1:]:
-        retstr = retstr + dlim + str(i)
-    return retstr
-
 if __name__ == "__main__":
     main()
