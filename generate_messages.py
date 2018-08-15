@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-from __future__ import division
+#!/usr/bin/env python3
 import sys, random, argparse
 from collections import defaultdict
 import pdb
@@ -58,11 +57,11 @@ def main():
 
 
     h = 0
-    print message_sending_hours
-    print "Configuration (configuration, start, end, number, city, threshold, sending hours): ", configuration, start_day, end_day, number_of_messages, city, threshold, message_sending_hours
+    print(message_sending_hours)
+    print("Configuration (configuration, start, end, number, city, threshold, sending hours): ", configuration, start_day, end_day, number_of_messages, city, threshold, message_sending_hours)
 
-    for current_day in xrange(start_day, end_day):
-        for current_hour in xrange(0,24):
+    for current_day in range(start_day, end_day):
+        for current_hour in range(0,24):
             current_data_file = DATA_FILE_PREFIX + str(city) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
             users_this_hour = []
             with open(current_data_file) as data:
@@ -78,12 +77,12 @@ def main():
 
             for u in users_this_hour:
                 userpool[u] += 1
-    print "Total users seen: ", len(userpool)
+    print("Total users seen: ", len(userpool))
     allusers = dict(userpool)
     #faster method to delete
-    userpool = dict((k, v) for (k, v) in userpool.iteritems() if v >= threshold)
-    print "Users above threshold: ", len(userpool), " percentage: ", (float(len(userpool))/float(len(allusers)) * 100), "%"
-    users_in_pool = userpool.keys()
+    userpool = dict((k, v) for (k, v) in userpool.items() if v >= threshold)
+    print("Users above threshold: ", len(userpool), " percentage: ", (float(len(userpool))/float(len(allusers)) * 100), "%")
+    users_in_pool = list(userpool.keys())
     current_message_file = SEED_FILE_PREFIX + str(configuration) + CONFIGURATION_FILE_FORMAT
 # CONFIG FILE FORMAT:
 # length of all users, length of user pool
@@ -100,7 +99,7 @@ def main():
     with open(current_message_file, "w+") as out_file:
         out_file.write(str(len(allusers)) + "," + str(len(userpool)))
         out_file.write("\n")
-        for u in userpool.iterkeys():
+        for u in userpool.keys():
             out_file.write("," + u)
         out_file.write("\n")
         out_file.write(str(city) + "\n")
@@ -115,25 +114,23 @@ def main():
         out_file.write(str(threshold) + "\n")
         out_file.write(str(dos_number) + "\n")
 
-    print "Generating: ", current_message_file
+    print("Generating: ", current_message_file)
     distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype, start_day, end_day, city, users_in_pool)
     # ID, TTL, Source, Destination, hop, trust
     random.seed(seed)
 
-    for hour in xrange(message_sending_hours):
+    for hour in range(message_sending_hours):
         message_number = distribution[hour]
 
         with open(current_message_file, "a+") as out_file:
 
-            for i in xrange(int(math.ceil(message_number))):
+            for i in range(int(math.ceil(message_number))):
 
                 id = DATA_FILE_PREFIX + str(hour) + "_" + str(i)
 
                 # Don't use the message_generation_type flag for now, maybe need it in the future.
                 # if message_generation_type == 1:
-                src, dst = random.sample(userpool.keys(), 2)
-                print "Msg No: %d, Current hour %d --> Sources Pool Size: %d ; Destinations Pool Size: %d for threshold %d" % (i, hour, len(userpool), len(userpool), threshold)
-
+                src, dst = random.sample(list(userpool.keys()), 2)
                 src = str(src)
                 dst = str(dst)
                 ttl = "72"
@@ -149,9 +146,9 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
 
         overflow = total_messages % sending_hours
 
-        for i in xrange(0, sending_hours):
+        for i in range(0, sending_hours):
             dictionary[i] = total_messages / sending_hours
-        for i in xrange(0, overflow):
+        for i in range(0, overflow):
             dictionary[i] += 1
         return dictionary
 
@@ -159,7 +156,7 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
         smscounter = defaultdict(int)
         smstotal = 0
         tot = 0
-        for day in xrange(start, end):
+        for day in range(start, end):
             commsfile = DATA_FILE_PREFIX + str(city) + "/" + str(day) + COMMS_AGGREGATE_FILE_FORMAT
             with open(commsfile) as data:
                 for entry in data:
@@ -171,18 +168,18 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
                         smscounter[current_hour] = int(smsnum.strip())
                         smstotal += int(smsnum.strip())
         # If this gives a Key Error, there's something wrong with the data.
-        for i in xrange(0, sending_hours):
+        for i in range(0, sending_hours):
             scaling = float(smscounter[i]) / smstotal
             dictionary[i] = int(math.ceil(scaling * total_messages))
             tot += dictionary[i]
-        print "Total messages:", tot
+        print("Total messages:", tot)
         return dictionary
 
     elif dist_type == 'user_sms_based':
         smscounter = defaultdict(int)
         smstotal = 0
         tot = 0
-        for day in xrange(start, end):
+        for day in range(start, end):
             commsfile = DATA_FILE_PREFIX + str(city) + "/" + str(day) + COMMS_USER_FILE_FORMAT
             with open(commsfile) as data:
                 for entry in data:
@@ -194,11 +191,11 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
                         if user.strip() in users:
                             smscounter[current_hour] += int(smsnum.strip())
                             smstotal += int(smsnum.strip())
-        for i in xrange(0, sending_hours):
+        for i in range(0, sending_hours):
             scaling = float(smscounter[i]) / smstotal
             dictionary[i] = int(math.ceil(scaling * total_messages))
             tot += dictionary[i]
-        print "Total Messages:", tot
+        print("Total Messages:", tot)
         return dictionary
 
     elif dist_type == 'user_activity_based':
@@ -206,9 +203,9 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
         h = 0
         total = 0
         total_msgs_sent = 0
-        for i in xrange(0, sending_hours):
+        for i in range(0, sending_hours):
             users = []
-            for tower, num_users in overall_network_state[i].iteritems():
+            for tower, num_users in overall_network_state[i].items():
                 users.append(num_users)
 
             medians[i] = np.median(users)
@@ -216,14 +213,14 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
 
         total_msgs_sent = 0
 
-        for i in xrange(0, sending_hours):
+        for i in range(0, sending_hours):
 
              dictionary[i] = int(math.ceil((medians[i]/total) * total_messages))
              total_msgs_sent += dictionary[i]
 
         overflow = total_messages - total_msgs_sent
 
-        for i in xrange(0, overflow):
+        for i in range(0, overflow):
             dictionary[i] += 1
         return dictionary
 
@@ -233,23 +230,23 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
         users_per_hour = {}
         total_msgs_sent = 0
 
-        for i in xrange(0, sending_hours):
+        for i in range(0, sending_hours):
             users_sum = 0
-            for tower, num_users in overall_network_state[i].iteritems():
+            for tower, num_users in overall_network_state[i].items():
                 users_sum += num_users
 
             total_users += users_sum
 
             users_per_hour[i] = users_sum
 
-        for i in xrange(0, sending_hours):
+        for i in range(0, sending_hours):
             dictionary[i] = int(math.ceil((users_per_hour[i]/total_users) * total_messages))
             total_msgs_sent += dictionary[i]
 
         overflow = total_messages - total_msgs_sent
 
 
-        for i in xrange(0, overflow):
+        for i in range(0, overflow):
             dictionary[i] += 1
 
         return dictionary
