@@ -78,14 +78,10 @@ def main():
 
             for u in users_this_hour:
                 userpool[u] += 1
-    dellist = []
-    for key, value in userpool.iteritems():
-        if value < threshold:
-            dellist.append(key)
     print "Total users seen: ", len(userpool)
     allusers = dict(userpool)
-    for u in dellist:
-        del userpool[u]
+    #faster method to delete
+    userpool = dict((k, v) for (k, v) in userpool.iteritems() if v >= threshold)
     print "Users above threshold: ", len(userpool), " percentage: ", (float(len(userpool))/float(len(allusers)) * 100), "%"
     users_in_pool = userpool.keys()
     current_message_file = SEED_FILE_PREFIX + str(configuration) + CONFIGURATION_FILE_FORMAT
@@ -98,33 +94,6 @@ def main():
 # Seed
 
 #########create threshold specific data folders###################################
-    foldername = DATA_FILE_PREFIX + str(city) + "_" + str(threshold)
-
-    if threshold != 0:
-        if not os.path.exists(os.getcwd() + "/" + foldername):
-
-            os.makedirs(os.getcwd() + "/" + foldername)
-            for current_day in xrange(start_day, end_day):
-                for current_hour in xrange(0,24):
-
-                    current_output_data_file = foldername + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
-                    thresh_out = open(current_output_data_file, 'w')
-                    current_data_file = DATA_FILE_PREFIX + str(city) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
-                    users_this_hour = []
-                    print "Filtering Users : hour %d , day %d " %(current_hour, current_day)
-                    with open(current_data_file) as data:
-                        for entry in data:
-                            hour, tower_id, user_ids = entry.split(",")
-                            user_ids = user_ids.strip().split("|")
-                            threshold_users_per_tower = [user for user in user_ids if user in users_in_pool]
-
-                            if len(threshold_users_per_tower) != 0:
-                                out_row = hour + "," + tower_id + "," + "|".join(threshold_users_per_tower)
-                                thresh_out.write(out_row + "\n")
-
-                    thresh_out.close()
-        else:
-            print "Folder for the threshold already exists"
 
 ####################################################################################
 
