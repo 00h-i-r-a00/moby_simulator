@@ -4,6 +4,7 @@ import argparse
 import sys
 import time
 import pdb
+import json
 
 DATA_FILE_PREFIX = "data/"
 CONFIG_FILE_PREFIX = "data/seeds/"
@@ -55,37 +56,32 @@ def main():
 
     # Parse the .config file
     print("Parsing configuration and messages from seed: ", configuration_file)
-    data = open(configuration_file)
-    allusers, userpool = data.readline().strip().split(",")
-    usermap = data.readline().strip()
-    city_number = int(data.readline().strip())
-    start_day = int(data.readline().strip())
-    end_day = int(data.readline().strip())
-    seed = int(data.readline().strip())
-    queuesize = int(data.readline().strip())
-
-        numdays = end_day - start_day
-#adding these two just for the sake of consistency
-
-
-    percentagehoursactive = int(data.readline().strip())
-    messagegenerationtype = int(data.readline().strip())
-    deliveryratiotype = int(data.readline().strip()) #1 == cumulative sum; #2 == total sum
-    distributiontype = str(data.readline().strip())
-    threshold = str(data.readline().strip())
-    dos_number = int(data.readline().strip())
-    message_delay_file = RESULT_FILE_PREFIX + str(configuration) + '_message_delays.csv'
-    file_delay = open(message_delay_file, 'w')
-
-    for entry in data:
-        # print entry
-        # ID, TTL, Source, Destination, hop, trust
-        hour, id, ttl, src, dst, hop, trust = entry.strip().split(",")
-        msg = Message(id, int(ttl), src, dst, int(hour), trust)
-        # Hop = time msg gets added to the network for easier calculations!
-        message_queue_map[int(hour)].append(msg)
+    with open(configuration_file) as conffile:
+        config = json.load(conffile)
+    city_number = config["city"]
+    start_day = config["start-day"]
+    end_day = config["end-day"]
+    seed = config["seed"]
+    queuesize = config["queuesize"]
+    numdays = end_day - start_day
+    # adding these two just for the sake of consistency
+    percentagehoursactive = config["percentagehoursactive"]
+    messagegenerationtype = config["messagegenerationtype"]
+    deliveryratiotype = config["deliveryratiotype"] #1 == cumulative sum; #2 == total sum
+    distributiontype = config["distributiontype"]
+    threshold = config["threshold"]
+    dos_number = config["dos-number"]
+    messages = config["messages"]
+    for message in messages:
+        message_queue_map[message["hour"]] = Message(
+                message["id"],
+                message["ttl"],
+                message["src"],
+                message["dst"],
+                message["hour"],
+                message["trust"])
         total_messages2 += 1
-
+    message_delay_file = RESULT_FILE_PREFIX + str(configuration) + '_message_delays.csv'
     for current_day in list(range(start_day, end_day)):
         for current_hour in list(range(0,24)):
             network_state_new = defaultdict(set)
@@ -195,11 +191,12 @@ def main():
                 for user, queueocc in queue_occupancy[key].items():
                     outfile.write(str(key) + "," + str(user) + "," + str(queueocc) + '\n')
 
-    for user, msgids in message_delivered.items():
-        for msgid in msgids:
-            file_delay.write(str(msgid) + "," + str(message_delays[msgid]) + "\n")
+    with open(message_delay_file, "w") as outfile:
+        for user, msgids in message_delivered.items():
+            for msgid in msgids:
+                outfile.write(str(msgid) + "," + str(message_delays[msgid]) + "\n")
 
-        print ("Simulation Done!")
+    print ("Simulation Done!")
 
 def getline(*args):
     retstr = str(args[0])
