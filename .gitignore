@@ -6,3 +6,4 @@
 *.json
 data/
 ExperimentsData/
+generate_configs.py
