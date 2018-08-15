@@ -78,15 +78,9 @@ def main():
 
             for u in users_this_hour:
                 userpool[u] += 1
-#    dellist = []
-#    for key, value in userpool.iteritems():
-#        if value < threshold:
-#            dellist.append(key)
 
     print "Total users seen: ", len(userpool)
     allusers = dict(userpool)
-#    for u in dellist:
-#        del userpool[u]
     #faster method to delete
     userpool = dict((k, v) for (k, v) in userpool.iteritems() if v >= threshold)
     print "Users above threshold: ", len(userpool), " percentage: ", (float(len(userpool))/float(len(allusers)) * 100), "%"
@@ -100,9 +94,7 @@ def main():
 # End day
 # Seed
 
-#########create threshold specific data folders###################################
 
-####################################################################################
 
     with open(current_message_file, "w+") as out_file:
         out_file.write(str(len(allusers)) + "," + str(len(userpool)))
