@@ -5,6 +5,7 @@ import pdb
 import math
 import numpy as np
 import os
+import json
 
 DATA_FILE_PREFIX = "data/"
 SEED_FILE_PREFIX = "data/seeds/"
@@ -52,10 +53,7 @@ def main():
     deliveryratiotype = args.deliveryratiotype
     distributiontype = args.distributiontype
     dos_number = args.dos_number
-
     message_sending_hours = ((end_day - start_day) * 24) - cooldown
-
-
     h = 0
     print(message_sending_hours)
     print("Configuration (configuration, start, end, number, city, threshold, sending hours): ", configuration, start_day, end_day, number_of_messages, city, threshold, message_sending_hours)
@@ -72,9 +70,7 @@ def main():
                     overall_network_state[h][tower_id] = len(set(user_ids.split("|")))
             users_this_hour = set(users_this_hour)
             active_userpool_per_hour[h] = users_this_hour
-
             h += 1
-
             for u in users_this_hour:
                 userpool[u] += 1
     print("Total users seen: ", len(userpool))
@@ -91,53 +87,47 @@ def main():
 # Start day
 # End day
 # Seed
+    config = {}
+    config["alluserslen"] = len(allusers)
+    config["userpoollen"] = len(userpool)
+    # Dropping writing user pool, not really used, only there for possible need to debug.
+    # config["userpool"] = users_in_pool
+    config["city"] = city
+    config["start-day"] = start_day
+    config["end-day"] = end_day
+    config["seed"] = seed
+    config["queuesize"] = queuesize
+    config["percentagehoursactive"] = percentage_hours_active
+    config["messagegenerationtype"] = message_generation_type
+    config["deliveryratiotype"] = deliveryratiotype
+    config["distributiontype"] = distributiontype
+    config["threshold"] = threshold
+    config["dos-number"] = dos_number
 
-#########create threshold specific data folders###################################
-
-####################################################################################
-
-    with open(current_message_file, "w+") as out_file:
-        out_file.write(str(len(allusers)) + "," + str(len(userpool)))
-        out_file.write("\n")
-        for u in userpool.keys():
-            out_file.write("," + u)
-        out_file.write("\n")
-        out_file.write(str(city) + "\n")
-        out_file.write(str(start_day) + "\n")
-        out_file.write(str(end_day) + "\n")
-        out_file.write(str(seed) + "\n")
-        out_file.write(str(queuesize) + "\n")
-        out_file.write(str(percentage_hours_active) + "\n")
-        out_file.write(str(message_generation_type) + "\n")
-        out_file.write(str(deliveryratiotype) + "\n")
-        out_file.write(str(distributiontype) + "\n")
-        out_file.write(str(threshold) + "\n")
-        out_file.write(str(dos_number) + "\n")
-
-    print("Generating: ", current_message_file)
+    print("Generating messages for config message file", current_message_file)
     distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype, start_day, end_day, city, users_in_pool)
-    # ID, TTL, Source, Destination, hop, trust
+    print(distribution)
     random.seed(seed)
-
+    messages = []
     for hour in range(message_sending_hours):
         message_number = distribution[hour]
-
-        with open(current_message_file, "a+") as out_file:
-
-            for i in range(int(math.ceil(message_number))):
-
-                id = DATA_FILE_PREFIX + str(hour) + "_" + str(i)
-
-                # Don't use the message_generation_type flag for now, maybe need it in the future.
-                # if message_generation_type == 1:
-                src, dst = random.sample(list(userpool.keys()), 2)
-                src = str(src)
-                dst = str(dst)
-                ttl = "72"
-                hop = "0"
-                trust = "1"
-                out_file.write(getline(hour, id, ttl, src, dst, hop, trust))
-                out_file.write("\n")
+        for i in range(int(math.ceil(message_number))):
+            message = {}
+            message["hour"] = hour
+            message["id"] = DATA_FILE_PREFIX + str(hour) + "_" + str(i)
+            # Don't use the message_generation_type flag for now, maybe need it in the future.
+            # if message_generation_type == 1:
+            src, dst = random.sample(userpool.keys(), 2)
+            message["src"] = src
+            message["dst"] = dst
+            message["ttl"] = 72
+            message["hop"] = 0
+            message["trust"] = 1
+            messages.append(message)
+    config["messages"] = messages
+    with open(current_message_file, "w+") as outfile:
+        json.dump(config, outfile)
+    print("Message generation complete and written to file:", current_message_file)
 
 def get_message_distribution(sending_hours, total_messages, dist_type, start, end, city, users):
     dictionary = {}
@@ -147,7 +137,7 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
         overflow = total_messages % sending_hours
 
         for i in range(0, sending_hours):
-            dictionary[i] = total_messages / sending_hours
+            dictionary[i] = int(total_messages / sending_hours)
         for i in range(0, overflow):
             dictionary[i] += 1
         return dictionary
