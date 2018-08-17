@@ -12,7 +12,12 @@ from argparse import RawTextHelpFormatter
 import functools
 import pdb
 import seaborn as sns
-import pandas as np
+import pandas as pd
+from math import isnan
+<<<<<<< HEAD
+from collections import defaultdict
+=======
+>>>>>>> aa8721ca9cec59a980ff7130096e8e59e1fc85a3
 
 mpl.rcParams['lines.linewidth'] = 2
 mpl.rcParams['figure.titlesize'] = 'large'
@@ -22,14 +27,17 @@ mpl.rcParams['figure.dpi'] = '100'
 mpl.rcParams['figure.facecolor'] = 'white'
 mpl.rcParams['figure.edgecolor'] = 'white'
 mpl.rcParams['figure.subplot.left']  = '0.125'  # the left side of the subplots of the figure
-mpl.rcParams['figure.subplot.right']   = '0.65'    # the right side of the subplots of the figure
+mpl.rcParams['figure.subplot.right']   = '0.9'    # the right side of the subplots of the figure
 mpl.rcParams['figure.subplot.bottom']  = '0.11'    # the bottom of the subplots of the figure
 mpl.rcParams['figure.subplot.top'] = '0.88'    # the top of the subplots of the figure
 mpl.rcParams['figure.subplot.wspace']  = '0.2'    # the amount of width reserved for blank space between subplots,
+mpl.rcParams['figure.subplot.hspace']  = '0.53'
 								 # expressed as a fraction of the average axis width
 
+
+
 #running string
-#python generate_results_aggregate.py --ttls 12 24 --start-days 53 --numdays 3 4 5 --city-numbers 0 --number 30000 --thresholds 0 2 4 6 8 10 12 --cooldowns 24 --seeds 244896923 --queuesizes 0 --percentagehoursactive 50 --messagegenerationtype 1 --deliveryratiotype 1 --distributiontype region_sms_based --sybil-number 0 --single --foldername ExperimentsData/data_42_simulations_38_succeeded --plottypes 1 2 3 4 5 6
+#python generate_results_aggregate.py --ttls 12 24 --start-days 53 --numdays 3 4 5 --city-numbers 0 --number 30000 --thresholds 0 2 4 6 8 10 12 --cooldowns 24 --seeds 244896923 --queuesizes 0 --percentagehoursactive 50 --messagegenerationtype 1 --deliveryratiotype 1 --distributiontype region_sms_based --dos-number 0 --single --foldername ExperimentsData/data_42_simulations_38_succeeded --plottypes 1 2 3 4 5 6
 
 colors = ["#596ed8",
 "#6ebe46",
@@ -64,13 +72,31 @@ colors = ["#596ed8",
 
 """
 #TODO
-def get_config_similarity(configs):
+def get_config_similarity(configs_content):
 
 	"""
 	gets the keys that have the same/different values
 
 	"""
-	pass
+	same = []
+	different = []
+<<<<<<< HEAD
+
+=======
+
+>>>>>>> aa8721ca9cec59a980ff7130096e8e59e1fc85a3
+	for key in configs_content[0].keys():
+
+		x = []
+		for config in configs_content:
+			x.append(config[key])
+		x = set(x)
+		if len(x) != 1:
+			different.append(key)
+		else:
+			same.append(key)
+
+	return different, same
 
 def get_delivery_ratios(plot_number, configs, args, type_):
 	##configs conts filepaths to configs
@@ -98,22 +124,7 @@ def get_delivery_ratios(plot_number, configs, args, type_):
 
 		dataset.append((hour_list, delivery_ratio))
 
-	config_different_key_values = []
-	config_same_key_values = []
-
-	#TODO: more efficient way to do this
-	#keys = [set(configs_content[i].keys()) for i in xrange(len(configs_content))]
-	#use functools and the reduce function
-
-	for key in configs_content[0].keys():
-		x = []
-		for config in configs_content:
-			x.append(config[key])
-		x = set(x)
-		if len(x) != 1:
-			config_different_key_values.append(key)
-		else:
-			config_same_key_values.append(key)
+	config_different_key_values, config_same_key_values = get_config_similarity(configs_content)
 
 	title = ''
 
@@ -121,6 +132,9 @@ def get_delivery_ratios(plot_number, configs, args, type_):
 
 	for key in config_same_key_values:
 		title += key + ': ' + str(configs_content[0][key]) + '; '
+
+	if type_ == 'pdrvalues':
+		return dataset
 
 	if type_ == 'plot':
 		fig = plt.figure()
@@ -185,12 +199,11 @@ def get_delivery_ratios(plot_number, configs, args, type_):
 
 		outf.close()
 
-    elif type_ == 'heatmap':
-        #assuming that the dataset has just one row given the fact that the initial function argument contains just one config
-        if len(dataset) == 1:
-            current_del_ratios = dataset[0][1]
-            maximum_del_ratio = max(current_del_ratio)
-            return maximum_del_ratio
+	if type_ == 'heatmap':
+		if len(dataset) == 1:
+			current_del_ratios = dataset[0][1]
+			maximum_del_ratio = max(current_del_ratios)
+			return maximum_del_ratio
 
 
 def get_attribute_value_of_config(config_file_path, attribute):
@@ -204,30 +217,14 @@ def get_queue_occupancy(plot_number, configs, args, type_):
 
 	p=0
 	num_nan = []
-	##get config contents
-	##get start day and end day from there
 	queue_occupancy_files = [fi.replace('configs', 'results').replace('.txt', '_queue_occupancy.csv') for fi in configs]
-
 	configs_content = []
 
 	for f in configs:
 		with open(f, 'r') as fi:
 			configs_content.append(json.loads(fi.readlines()[0]))
 
-	config_different_key_values = []
-	config_same_key_values = []
-
-	for key in configs_content[0].keys():
-		x = []
-		for config in configs_content:
-			x.append(config[key])
-		x = set(x)
-		if len(x) != 1:
-			config_different_key_values.append(key)
-		else:
-			config_same_key_values.append(key)
-
-
+	config_different_key_values, config_same_key_values  = get_config_similarity(configs_content)
 
 	max_queue_occs_per_configuration = []
 	hours_per_configuration = []
@@ -237,9 +234,7 @@ def get_queue_occupancy(plot_number, configs, args, type_):
 		##initialization
 		config_file = filename.replace('results', 'configs').replace('_queue_occupancy.csv', '.txt')
 		endday = get_attribute_value_of_config(config_file, 'end-day')
-
 		max_hours = 0
-
 		#initialize a dictionary for each file
 		#containing key as day and hour
 		#value as a list which is to contain all the queue occupancies noted for that day and hour by all usrs
@@ -271,6 +266,7 @@ def get_queue_occupancy(plot_number, configs, args, type_):
 		total = 0
 		keys = []
 
+		###processing all the queue_occupancy to get the maximum queue occupancies
 		for key, value in queue_occupancy.iteritems():
 
 			list_of_user_occupancies = queue_occupancy[key]
@@ -289,6 +285,7 @@ def get_queue_occupancy(plot_number, configs, args, type_):
 				except TypeError as exc:
 					print exc
 
+
 		max_queue_occs_per_configuration.append(max_queue_occs)
 		hours_per_configuration.append(hours)
 		title = ''
@@ -296,50 +293,61 @@ def get_queue_occupancy(plot_number, configs, args, type_):
 		for key in config_same_key_values:
 			 title += key + ': ' + str(configs_content[0][key]) + '; '
 
-		if type_ == 'plot':
+	if type_ == 'values':
+		return hours_per_configuration, max_queue_occs_per_configuration
 
-			fig = plt.figure()
-			title = "Configuration Parameters in Common: " + title
-			fig.text(.5, .05, title, ha='center')
+	if type_ == 'plot':
 
-
-			for index, queue_occupancies in enumerate(max_queue_occs_per_configuration):
-				hours = hours_per_configuration[index]
-				legend = ''
-
-				for key in config_different_key_values:
-					legend += ' ' + key + ':' + str(configs_content[index][key])
+		fig = plt.figure()
+		title = "Configuration Parameters in Common: " + title
+		fig.text(.5, .05, title, ha='center')
 
 
-				plt.xticks(fontsize=7)
-				plt.yticks(fontsize=7)
-				y = np.array(queue_occupancies)
-				mask = np.isfinite(np.array(y))
+		for index, queue_occupancies in enumerate(max_queue_occs_per_configuration):
+			hours = hours_per_configuration[index]
+			legend = ''
 
-				num_nan.append(len([i for i in mask if i == False]))
+			for key in config_different_key_values:
+				legend += ' ' + key + ':' + str(configs_content[index][key])
 
-				y_ = np.array(y)[mask]
 
-				line, = plt.plot(np.array(hours)[mask], y_,label=legend, color=colors[index], linestyle='--', lw=0.5)
-				plt.plot(np.array(hours), y,label=legend, color=line.get_color(), lw=1)
+			plt.xticks(fontsize=7)
+			plt.yticks(fontsize=7)
+			y = np.array(queue_occupancies)
+			mask = np.isfinite(np.array(y))
 
-				plt.legend(fontsize=7,  bbox_to_anchor=(1.1, 1.05), loc='upper left')
-				#p +=1
-				#plt.title(title, fontsize=7)
+			num_nan.append(len([i for i in mask if i == False]))
 
-			figname = 'plot_'
-			figname = os.getcwd() + '/' + args.outputfoldername + '/' + figname + '_queuecoccupancy.png'
-			plt.savefig(figname)
+			y_ = np.array(y)[mask]
 
-		elif type_ == 'maximum':
+			line, = plt.plot(np.array(hours)[mask], y_,label=legend, color=colors[index], linestyle='--', lw=0.5)
+			plt.plot(np.array(hours), y,label=legend, color=line.get_color(), lw=1)
 
-			outf = open(os.getcwd() + '/' + args.outputfoldername + '/' + '_maximum_queue_occupancy.csv', 'w')
-			outf.write('Configuration Parameters in Common: ' + title + ',\n')
-			outf.write('Configuration Name,Maximum Queue Occupancy' + '\n')
-			for index, queue_occupancies in enumerate(max_queue_occs_per_configuration):
-				max_queue = max(queue_occupancies)
-				config_string = '::'.join([str(key) + ':' + str(value) for key, value in configs_content[index].iteritems() if key in config_different_key_values])
-				outf.write(config_string + ',' + str(max_queue) + '\n')
+			plt.legend(fontsize=7,  bbox_to_anchor=(1.1, 1.05), loc='upper left')
+			#p +=1
+			#plt.title(title, fontsize=7)
+
+		figname = 'plot_'
+		figname = os.getcwd() + '/' + args.outputfoldername + '/' + figname + '_queuecoccupancy.png'
+		plt.savefig(figname)
+
+	elif type_ == 'maximum':
+
+		outf = open(os.getcwd() + '/' + args.outputfoldername + '/' + '_maximum_queue_occupancy.csv', 'w')
+		outf.write('Configuration Parameters in Common: ' + title + ',\n')
+		outf.write('Configuration Name,Maximum Queue Occupancy' + '\n')
+		for index, queue_occupancies in enumerate(max_queue_occs_per_configuration):
+			max_queue = max(queue_occupancies)
+			config_string = '::'.join([str(key) + ':' + str(value) for key, value in configs_content[index].iteritems() if key in config_different_key_values])
+			outf.write(config_string + ',' + str(max_queue) + '\n')
+
+	elif type_ == 'heatmap':
+		#assume just one value
+
+		for index, queue_occupancies in enumerate(max_queue_occs_per_configuration):
+			max_queue = max(queue_occupancies)
+
+		return max_queue
 
 def plot_active_users(start_day, end_day):
 	pass
@@ -352,49 +360,43 @@ def get_delays(plot_number, configs, args, type_):
 		with open(f, 'r') as fi:
 			configs_content.append(json.loads(fi.readlines()[0]))
 
-	config_different_key_values = []
-	config_same_key_values = []
-
-	for key in configs_content[0].keys():
-
-		x = []
-		for config in configs_content:
-			x.append(config[key])
-		x = set(x)
-		if len(x) != 1:
-			config_different_key_values.append(key)
-		else:
-			config_same_key_values.append(key)
+	config_different_key_values, config_same_key_values = get_config_similarity(configs_content)
 
 	average_delays = []
 	cellText = []
-        delay_values = {}
+	delay_values = []
+	delays_per_message = []
 
 	for fi in configs:
 
 		delays = []
 		fi_ = fi.replace('configs', 'results').replace('.txt', '_message_delays.csv')
+
 		with open(fi_) as csvfile:
+			hours = []
+			delays_per_hour = []
+
 			datareader = csv.reader(csvfile, delimiter=',')
 			for row in datareader:
 				delays.append(int(row[1]))
+				delays_per_message.append(int(row[1]))
+				delays_per_hour.append(int(row[1]))
 
 			average_delay = sum(delays)/len(delays)
 			celltext = ''
 			with open(fi, 'r') as f:
 				config_content = json.loads(f.readlines()[0])
-                                #initialize; use later
+								#initialize; use later
 			for key in config_different_key_values:
 				celltext += str(key) + ": " + str(config_content[key]) + ":::"
 
 			cellText.append([celltext, average_delay])
-                        delay_values[config_content] = average_delay
+			delay_values.append(average_delay)
 
 	cellText.sort(key = lambda x: x[1])
 
-
 	if type_ == 'averagedelaystable':
-                #table containing the average delays for all configurations
+				#table containing the average delays for all configurations
 		tabledata = ''
 		for row in cellText:
 
@@ -421,7 +423,7 @@ def get_delays(plot_number, configs, args, type_):
 
 
 	elif type_ == 'maxandmin':
-                #maximum and final values of the average delays
+				#maximum and final values of the average delays
 		ind = 1
 		for row in cellText:
 			if ind == 1:
@@ -452,8 +454,11 @@ def get_delays(plot_number, configs, args, type_):
 
 		print "Minimum and Maximum Message Delivery Times/Delays in the file: " + outf2
 
-        elif type_ == 'heatmap':
-            return delay_values
+	elif type_ == 'heatmap':
+		return delay_values
+
+	elif type_ == 'delay_values':
+		return delays_per_message
 
 def get_configs(args):
 
@@ -466,48 +471,48 @@ def get_configs(args):
 	cities = args.city_numbers
 	cooldowns =  args.cooldowns
 	thresholds = args.thresholds
-	ttls = args.ttls
+	#ttls = args.ttls
 	seeds = args.seeds
 	queuesizes = args.queuesizes
 	percentagehoursactive = args.percentagehoursactive
 	messagegenerationtype = args.messagegenerationtype
 	deliveryratiotype = args.deliveryratiotype
 	distributiontype = args.distributiontype
-	sybils = args.sybil_number
+	doss = args.dos_number
 
 	configs_to_plot = []
 	configs_ = 0
-	for val_ttl in ttls:
-		for val_start in start_days:
-			for val_nod in number_of_days:
-				for val_city in cities:
-					for val_cd in cooldowns:
-						for val_nm in number_of_messages:
-							for val_queue in queuesizes:
-								for val_seed in seeds:
-									for val_msgtype in messagegenerationtype:
-										for val_active in percentagehoursactive:
-											for val_delratio in deliveryratiotype:
-												for val_disttype in distributiontype:
-													for val_threshold in thresholds:
-														for val_sybils in sybils:
-															config = {}
-															config["ttl"] = val_ttl
-															config["start-day"] = val_start
-															config["end-day"] = val_start+val_nod
-															config["city-number"] = val_city
-															config["cooldown"] = val_cd
-															config["number"] = val_nm
-															config["queuesize"] = val_queue
-															config["seed"] = val_seed
-															config["messagegenerationtype"] = val_msgtype
-															config["percentagehoursactive"] = val_active
-															config["deliveryratiotype"] = val_delratio
-															config["distributiontype"] = val_disttype
-															config["threshold"] = val_threshold
-															config["sybil-number"] = val_sybils
-															configs_to_plot.append(config)
-															configs_ += 1
+
+	for val_start in start_days:
+		for val_nod in number_of_days:
+			for val_city in cities:
+				for val_cd in cooldowns:
+					for val_nm in number_of_messages:
+						for val_queue in queuesizes:
+							for val_seed in seeds:
+								for val_msgtype in messagegenerationtype:
+									for val_active in percentagehoursactive:
+										for val_delratio in deliveryratiotype:
+											for val_disttype in distributiontype:
+												for val_threshold in thresholds:
+													for val_doss in doss:
+														config = {}
+														config["ttl"] = val_nod * 24
+														config["start-day"] = val_start
+														config["end-day"] = val_start+val_nod
+														config["city-number"] = val_city
+														config["cooldown"] = val_cd
+														config["number"] = val_nm
+														config["queuesize"] = val_queue
+														config["seed"] = val_seed
+														config["messagegenerationtype"] = val_msgtype
+														config["percentagehoursactive"] = val_active
+														config["deliveryratiotype"] = val_delratio
+														config["distributiontype"] = val_disttype
+														config["threshold"] = val_threshold
+														config["dos-number"] = val_doss
+														configs_to_plot.append(config)
+														configs_ += 1
 
 
 	foldername = os.getcwd() + '/' + args.foldername + '/configs/'
@@ -531,59 +536,384 @@ def get_configs(args):
 				break
 
 	return config_files_to_plot
+<<<<<<< HEAD
+
 def extract_configs(configs, params_to_extract):
-    """
-    params_to_extract = dictionary containing param: values pairs whose corresponding configs need to be extractedf
+	"""
+	params_to_extract = dictionary containing param: values pairs whose corresponding configs need to be extractedf
 
-    """
-    new_configs = []
+	"""
+	new_configs = []
 
-    for conf in configs:
-        with open(conf, 'r') as f:
-            config_content = json.loads(f.readlines()[0])
+	num_params = len(params_to_extract.keys())
 
-        for key, value in params_to_extract.items():
-            if config_content[key] == value:
-                new_configs.append(conf)
 
-    return new_configs
+	for conf in configs:
+		num_keys_present = 0
+		with open(conf, 'r') as f:
+			config_content = json.loads(f.readlines()[0])
 
-def plot_heatmap(dict_to_heatmap, configs, title):
+		for key, value in params_to_extract.items():
+			if config_content[key] == value:
+				num_keys_present += 1
 
-    #dict_to_heatmap contains keys as start days and values as their corresponding metric values to plot
-    columns_headings = []
-    values = []
 
-    #one conf should correspond with one start-day
-    #this function is meant to plot a heatmap of 1 week only
+		if num_keys_present == num_params:
+			new_configs.append(conf)
+			num_keys_present = 0
 
-    for cons in configs:
-        with open(cons, 'r') as f:
-            conf = json.loads()f.readlines()[0])
+	return new_configs
 
-        start_day = conf['start-day']
-        columns_headings.append(start_day)
-        values.append(dict_to_heatmap[start_day])
+def plot_heatmap(dict_to_heatmap, configs, args, title):
 
-    df = pd.DataFrame(values, columns = column_headings)
-    corr_matrix = df.corr()
+	#dict_to_heatmap contains keys as start days and values as their corresponding metric values to plot
+	# ~ columns_headings = []
+	# ~ values = []
 
-    sns.heatmap(corr_matrix, cmap='Pu0r')
+	#one conf should correspond with one start-day
+	#this function is meant to plot a heatmap of 1 week only
+	#dict_to_heatmap contains start_day --> average delay mappings
+	# ~ for cons in configs:
+		# ~ with open(cons, 'r') as f:
+			# ~ conf = json.loads(f.readlines()[0])
+
+		# ~ start_day = conf['start-day']
+		# ~ columns_headings.append(start_day)
+		# ~ values.append(dict_to_heatmap[start_day])
+
+	# ~ columns_headings = [str(i) for i in columns_headings]
+	# ~ #pdb.set_trace()
+	# ~ df = pd.DataFrame(values, columns = [title])
+
+	# ~ corr_matrix = df.corr()
+
+	# ~ sns.heatmap(corr_matrix, cmap='PRGn')
+
+
+	###create a matrix#####3
+	pdb.set_trace()
+	df = pd.DataFrame(dict_to_heatmap, index=args.start_days)
+	fig = plt.figure(figsize=(12,12))
+	r = sns.heatmap(df, cmap='BuPu')
+	r.set_title("Heatmap for " + title)
+	r.set_ylabel('First Day of the Week')
+	r.set_xlabel('Number of Days for which Simulation was run')
+	plt.show()
+
 
 def get_heatmap(configs, args):
 
-    start_days = args.start_days
-    avg_delay_dict = {}
-    max_pdr_dict = {}
-    for start_day in start_days:
-        params_to_extract = {"start-day": start_day}
-        confgs_new = extract_configs(configs, params_to_extract)
-        avg_delay_dict[start_day] = get_delays('single', configs_new, args, 'heatmap')
-        max_pdr_dict[start_day] =
+	start_days = args.start_days
+	avg_delay_dict = defaultdict(list)
+	max_pdr_dict = defaultdict(list)
+	max_queue_occupancy = defaultdict(list)
 
-    plot_heatmap(avg_delay_dict, configs, 'Average Delay')
-    plot_heatmap(pdr_dict, configs, 'Packet Delivery Ratio')
-    plot_heatmap(queue_occ_dict, configs, 'Queue Occupancy')
+	for num_day in [3, 4, 5]:
+		for start_day in start_days:
+			params_to_extract = {"start-day": start_day, "end-day": int(start_day) + num_day}
+			configs_new = extract_configs(configs, params_to_extract)
+			avg_delay_dict[str(num_day)].append(get_delays('single', configs_new, args, 'heatmap')[0])
+			max_pdr_dict[str(num_day)].append(get_delivery_ratios('single', configs_new, args, 'heatmap'))
+			max_queue_occupancy[str(num_day)].append(get_queue_occupancy('single', configs_new, args, 'heatmap'))
+
+	plot_heatmap(avg_delay_dict, configs, args, 'Average Delay')
+	plot_heatmap(max_pdr_dict, configs, args, 'Packet Delivery Ratio')
+	#plot_heatmap(max_queue_occupancy, configs, args, 'Queue Occupancy')
+=======
+def extract_configs(configs, params_to_extract):
+	"""
+	params_to_extract = dictionary containing param: values pairs whose corresponding configs need to be extractedf
+
+	"""
+	new_configs = []
+
+	for conf in configs:
+		with open(conf, 'r') as f:
+			config_content = json.loads(f.readlines()[0])
+
+		for key, value in params_to_extract.items():
+			if config_content[key] == value:
+				new_configs.append(conf)
+
+	return new_configs
+
+def plot_heatmap(dict_to_heatmap, configs, title):
+
+	#dict_to_heatmap contains keys as start days and values as their corresponding metric values to plot
+	columns_headings = []
+	values = []
+
+	#one conf should correspond with one start-day
+	#this function is meant to plot a heatmap of 1 week only
+	#dict_to_heatmap contains start_day --> average delay mappings
+	for cons in configs:
+		with open(cons, 'r') as f:
+			conf = json.loads(f.readlines()[0])
+
+		start_day = conf['start-day']
+		columns_headings.append(start_day)
+		values.append(dict_to_heatmap[start_day])
+
+	columns_headings = [str(i) for i in columns_headings]
+	#pdb.set_trace()
+	df = pd.DataFrame(values, columns = [title])
+
+	corr_matrix = df.corr()
+
+	sns.heatmap(corr_matrix, cmap='PRGn')
+
+
+
+def get_heatmap(configs, args):
+
+	start_days = args.start_days
+	avg_delay_dict = {}
+	max_pdr_dict = {}
+	max_queue_occupancy = {}
+
+	for start_day in start_days:
+		params_to_extract = {"start-day": start_day}
+		configs_new = extract_configs(configs, params_to_extract)
+		#TODO: see how this is returned; need to change if there is an error
+		avg_delay_dict[start_day] = get_delays('single', configs_new, args, 'heatmap')[0]
+		max_pdr_dict[start_day] =  get_delivery_ratios('single', configs_new, args, 'heatmap')
+		max_queue_occupancy[start_day] = get_queue_occupancy('single', configs_new, args, 'heatmap')
+
+	plot_heatmap(avg_delay_dict, configs, 'Average Delay')
+	plot_heatmap(max_pdr_dict, configs, 'Packet Delivery Ratio')
+	plot_heatmap(max_queue_occupancy, configs, 'Queue Occupancy')
+
+
+def get_embedded_graphs(configs, args):
+	overall_best_pdr = []
+	overall_max_queue = []
+
+	start_days = args.start_days
+	delays = []
+	pdrs = []
+	queue_occs = []
+	maxPDR= 0
+	maxQueue=0
+	maxDelay = 0
+
+	#to be used for subplots
+	fig, axs = plt.subplots(len(start_days), 4)
+	i=0
+
+	pdr_xlim_min = []
+	pdr_xlim_max = []
+	pdr_ylim_max = []
+	pdr_ylim_min = []
+
+	qu_ylim_max = []
+	qu_ylim_min = []
+
+	for start_day in start_days:
+
+		params_to_extract = {"start-day": start_day}
+		configs_new = extract_configs(configs, params_to_extract)
+
+		dataset = get_delivery_ratios('single', configs_new, args, 'pdrvalues')
+
+		axs[i, 0].plot(dataset[0][0], dataset[0][1])
+		pdr_xlim_min.append(min(dataset[0][0]))
+		pdr_xlim_max.append(max(dataset[0][0]))
+		pdr_ylim_min.append(min(dataset[0][1]))
+		pdr_ylim_max.append(max(dataset[0][1]))
+
+		maxPDR = max(dataset[0][1])
+		hours_per_configuration, max_queue_occs_per_configuration = get_queue_occupancy('single', configs_new, args, 'values')
+		overall_best_pdr.append(maxPDR)
+		########################process queue occupancies########################################
+
+
+		endday = get_attribute_value_of_config(configs_new[0], 'end-day')
+		overall_max_queue.append(maxQueue)
+		for index, queue_occupancies in enumerate(max_queue_occs_per_configuration):
+
+			queue_occupancies_without_nan = [ind for ind in queue_occupancies if isinstance(ind, np.int64)]
+			queue_occupancies_without_nan = [ind for ind in queue_occupancies if ind != 'nan']
+			queue_occupancies_without_nan = [ind for ind in queue_occupancies if isnan(ind) != True]
+
+			maxQueue = max(queue_occupancies_without_nan)
+
+
+			if len(queue_occupancies) == 0:
+				qu_ylim_min.append(0)
+				qu_ylim_max.append(0)
+
+			else:
+				qu_ylim_min.append(min(queue_occupancies_without_nan))
+				qu_ylim_max.append(max(queue_occupancies_without_nan))
+>>>>>>> aa8721ca9cec59a980ff7130096e8e59e1fc85a3
+
+		 	hours = hours_per_configuration[index]
+			y = np.array(queue_occupancies)
+			mask = np.isfinite(np.array(y))
+			y_ = np.array(y)[mask]
+
+			line, = axs[i, 1].plot(np.array(hours)[mask], y_, color=colors[index], linestyle='--', lw=0.5)
+
+			axs[i, 1].plot(np.array(hours), y, color=line.get_color(), lw=1)
+
+		###processing average delays##############################################################################3
+
+
+		delays = get_delays('single', configs_new, args, 'delay_values')
+		maxDelay = max(delays)
+
+		x = np.sort(delays)
+		y = np.arange(len(delays))/float(len(delays))
+
+<<<<<<< HEAD
+def get_embedded_graphs(configs, args):
+	overall_best_pdr = []
+	overall_max_queue = []
+
+	start_days = args.start_days
+	delays = []
+	pdrs = []
+	queue_occs = []
+	maxPDR= 0
+	maxQueue=0
+	maxDelay = 0
+
+	#to be used for subplots
+	fig, axs = plt.subplots(len(start_days), 4)
+	i=0
+
+	pdr_xlim_min = []
+	pdr_xlim_max = []
+	pdr_ylim_max = []
+	pdr_ylim_min = []
+
+	qu_ylim_max = []
+	qu_ylim_min = []
+
+	for start_day in start_days:
+
+		params_to_extract = {"start-day": start_day}
+		configs_new = extract_configs(configs, params_to_extract)
+
+		dataset = get_delivery_ratios('single', configs_new, args, 'pdrvalues')
+
+		axs[i, 0].plot(dataset[0][0], dataset[0][1])
+		pdr_xlim_min.append(min(dataset[0][0]))
+		pdr_xlim_max.append(max(dataset[0][0]))
+		pdr_ylim_min.append(min(dataset[0][1]))
+		pdr_ylim_max.append(max(dataset[0][1]))
+
+		maxPDR = max(dataset[0][1])
+		hours_per_configuration, max_queue_occs_per_configuration = get_queue_occupancy('single', configs_new, args, 'values')
+		overall_best_pdr.append(maxPDR)
+		########################process queue occupancies########################################
+
+
+		endday = get_attribute_value_of_config(configs_new[0], 'end-day')
+		overall_max_queue.append(maxQueue)
+		for index, queue_occupancies in enumerate(max_queue_occs_per_configuration):
+
+			queue_occupancies_without_nan = [ind for ind in queue_occupancies if isinstance(ind, np.int64)]
+			queue_occupancies_without_nan = [ind for ind in queue_occupancies if ind != 'nan']
+			queue_occupancies_without_nan = [ind for ind in queue_occupancies if isnan(ind) != True]
+
+			maxQueue = max(queue_occupancies_without_nan)
+
+
+			if len(queue_occupancies) == 0:
+				qu_ylim_min.append(0)
+				qu_ylim_max.append(0)
+
+			else:
+				qu_ylim_min.append(min(queue_occupancies_without_nan))
+				qu_ylim_max.append(max(queue_occupancies_without_nan))
+
+		 	hours = hours_per_configuration[index]
+			y = np.array(queue_occupancies)
+			mask = np.isfinite(np.array(y))
+			y_ = np.array(y)[mask]
+
+			line, = axs[i, 1].plot(np.array(hours)[mask], y_, color=colors[index], linestyle='--', lw=0.5)
+
+			axs[i, 1].plot(np.array(hours), y, color=line.get_color(), lw=1)
+
+		###processing average delays##############################################################################3
+
+
+		delays = get_delays('single', configs_new, args, 'delay_values')
+		maxDelay = max(delays)
+
+		x = np.sort(delays)
+		y = np.arange(len(delays))/float(len(delays))
+
+=======
+>>>>>>> aa8721ca9cec59a980ff7130096e8e59e1fc85a3
+		axs[i, 2].plot(x, y)
+
+
+		###graphing aggregate stats#####
+
+		values_ = [maxPDR, maxQueue, maxDelay]
+		#values_ = [float("{0:.4f}".format(i)) for i in values_	]
+
+		column_names = ['Maximum PDR', "Maximum \nQueue Occupancy", "Maximum Delay"]
+		df = pd.DataFrame(np.array(values_).reshape(1,3), columns=column_names)
+		the_table = axs[i, 3].table(cellText=df.values, colLabels=df.columns, loc='center', fontsize=20)
+		the_table.scale(1.25, 3)
+		the_table.auto_set_font_size(False)
+		the_table.set_fontsize(8)
+		################################
+		i+=1
+
+	for x in xrange(i):
+
+		axs[x, 0].axis([min(pdr_xlim_min), max(pdr_xlim_max), min(pdr_ylim_min), max(pdr_ylim_max)])
+		axs[x, 0].set_title('PDR')
+		axs[x, 0].set_xlabel('Hours')
+		axs[x, 0].set_ylabel('Delivery Ratios', fontsize=7)
+
+		axs[x, 1].axis([min(pdr_xlim_min), max(pdr_xlim_max), min(qu_ylim_min), max(qu_ylim_max)])
+		axs[x, 1].set_title('Maximum Queue Occupancies')
+		axs[x, 1].set_xlabel('Hours')
+		axs[x, 1].set_ylabel('Maximum Queue Occupancy',  fontsize=7)
+
+		axs[x, 2].axis([0, max(delays) + 1, 0, 1])
+		axs[x, 2].set_title('Average Delay CDF')
+		axs[x, 2].set_xlabel('Delays in Hours')
+		axs[x, 2].set_ylabel('CDF',  fontsize=7)
+
+		axs[x, 3].set_title('Aggregate Statistics')
+		axs[x, 3].axis('off')
+
+
+	##label the rows
+	pad = 3
+	position = max(pdr_ylim_max)/float(2)
+
+	rows = ['Start Day {}'.format(row) for row in start_days]
+	for ax, row in zip(axs[:,0], rows):
+		ax.annotate(row, xy=(0, position), xytext=(-ax.yaxis.labelpad-pad,0),xycoords=ax.yaxis.label, textcoords='offset points', size='medium', ha='right', va='center')
+
+	##title
+	configs_content = []
+	for f in configs:
+		with open(f, 'r') as fi:
+			configs_content.append(json.loads(fi.readlines()[0]))
+
+	different, same = get_config_similarity(configs_content)
+	title = "Performance metrics for configurations with common values: "
+
+	for key in same:
+		title += str(key) + ": " + str(configs_content[0][key]) + ", "
+
+	########################
+
+
+	fig.suptitle(title, fontsize=9)
+	plt.show()
+
+	print "Overall Maximum PDR %d" %(max(overall_best_pdr))
+	print "Overall Maximum Queue %d " % (max(overall_max_queue))
 
 def main():
 
@@ -595,14 +925,14 @@ def main():
 	parser.add_argument('--city-numbers', help='City to generate messages for', type=int, nargs='+')
 	parser.add_argument('--thresholds', help='Minimum occourances to be considered a legit user', type=int, nargs='+')
 	parser.add_argument('--cooldowns', help='Cooldown hours, messages distributed over total hours - cooldown hours.', type=int, nargs='+')
-	parser.add_argument('--ttls', help='The time to live to be used for the messages', type=int, nargs='+')
+	#parser.add_argument('--ttls', help='The time to live to be used for the messages', type=int, nargs='+')
 	parser.add_argument('--seeds', help='Number to use for random seeding', type=int, nargs='+')
 	parser.add_argument('--queuesizes', help='0 if no queuesize else a specific number with the queuesize value', type=int, nargs='+')
 	parser.add_argument('--percentagehoursactive', help='Percentage of hours the destinations stay active', type=int, nargs='+')
 	parser.add_argument('--deliveryratiotype', help='1 if total_messages == upto that hour; 2 if total_messages == total number of messages in all hours', type=int, nargs='+')
 	parser.add_argument('--messagegenerationtype', help='Original Criteria or Selectively changing sources and destinations', type=int, nargs='+')
 	parser.add_argument('--distributiontype', help='2 types -> "uniform" or "user-activity-based" ; used in conjunction with messagegenerationtype', type=str, nargs='+')
-	parser.add_argument('--sybil-number', help='number of sybils', type=int, nargs='+')
+	parser.add_argument('--dos-number', help='number of doss', type=int, nargs='+')
 	parser.add_argument('--single', help='Use this flag to plot everything on a single plot', action='store_true')
 	parser.add_argument('--multiple', help='Use this flag to plot everything on multiple plots', action='store_true')
 	parser.add_argument('--useconfigs', help='Use this flag to specify specific configurations to plot', action='store_true')
@@ -613,7 +943,9 @@ def main():
 																 '\n 4. get maximum queue occupancies' +
 																 '\n 5. get average delays in a table' +
 																 '\n 6. get minimum and maximum delays' +
-                                                                                                                                 '\n 7. get heatmaps for each aggregate metric'
+																 '\n 7. get heatmaps for each aggregate metric' +
+																 '\n 8. get embedded graphs for 3 metrics'
+
 																 , nargs='+', type=int)
 	parser.add_argument('--outputfoldername', type=str, nargs='?', required=True)
 
@@ -634,8 +966,6 @@ def main():
 	else:
 		#contains the paths of all the configs to plot
 		configs = get_configs(args)
-
-#    for i in xrange(1, 6):
 
 	num_of_plots = (args.single, args.multiple)
 
@@ -659,10 +989,11 @@ def main():
 		elif plot == 6:
 			get_delays(num_of_plots, configs, args, 'maxandmin')
 
-                elif plot == 7:
-                        pdb.set_trace()
-                        get_heatmap(configs, args)
+		elif plot == 7:
+			get_heatmap(configs, args)
 
+		elif plot == 8:
+			get_embedded_graphs(configs, args)
 
 if __name__ == "__main__":
 	main()

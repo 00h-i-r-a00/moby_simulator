@@ -42,15 +42,15 @@ distributiontype = ['uniform', 'user_activity_based', 'total_users_based', 'regi
 #thresholds = [0, 2, 4, 6, 8, 10, 12]
 #infinite since we are intially taking an estimate of the possible PDRs
 thresholds = [0, 2, 4, 6, 8, 10, 12]
-max_number = 10 #max number of sybil messages to send
-sybil_numbers = [number for number in xrange(1, max_number + 1, 1)]
-sybil_numbers = [0]
+max_number = 10 #max number of dos messages to send
+dos_numbers = [number for number in xrange(1, max_number + 1, 1)]
+dos_numbers = [0]
 
 def main():
     config = {}
     config_ctr = 0
 
-    total_configs = len(start_days) * len(number_of_days) * len(cities) * len(cooldowns) * len(queuesizes) * len(seeds) * len(messagegenerationtype)* len(percentagehoursactive) * len(deliveryratiotype) * len(distributiontype) * len(thresholds) * len(sybil_numbers)
+    total_configs = len(start_days) * len(number_of_days) * len(cities) * len(cooldowns) * len(queuesizes) * len(seeds) * len(messagegenerationtype)* len(percentagehoursactive) * len(deliveryratiotype) * len(distributiontype) * len(thresholds) * len(dos_numbers)
     print "Cleaning current config files."
 
     for f in achtungs:
@@ -69,7 +69,7 @@ def main():
                                         for val_delratio in deliveryratiotype:
                                             for val_disttype in distributiontype:
                                                 for val_threshold in thresholds:
-                                                    for val_sybilnumber in sybil_numbers:
+                                                    for val_dosnumber in dos_numbers:
                                                         current_achtung = next(achtungpool)
                                                         config["start-day"] = val_start
                                                         config["end-day"] = val_start+val_nod
@@ -85,7 +85,7 @@ def main():
                                                         config["distributiontype"] = val_disttype
                                                         config["configuration"] = str(run_number) + "_" + str(config_ctr)
                                                         config["threshold"] = val_threshold
-                                                        config["sybil-number"] = val_sybilnumber
+                                                        config["dos-number"] = val_dosnumber
                                                         config_ctr += 1
 
                                                         with open(current_achtung+".json", 'a+') as outfile:

@@ -1,11 +1,11 @@
-#!/usr/bin/env python
-from __future__ import division
+#!/usr/bin/env python3
 import sys, random, argparse
 from collections import defaultdict
 import pdb
 import math
 import numpy as np
 import os
+import json
 
 DATA_FILE_PREFIX = "data/"
 SEED_FILE_PREFIX = "data/seeds/"
@@ -33,7 +33,7 @@ def main():
     parser.add_argument('--deliveryratiotype', help='1 if total_messages == upto that hour; 2 if total_messages == total number of messages in all hours', type=int, nargs='?', default=1)
     parser.add_argument('--messagegenerationtype', help='Original Criteria or Selectively changing sources and destinations', type=int, nargs='?', default=1)
     parser.add_argument('--distributiontype', help='2 types -> "uniform" or "user-activity-based" ; used in conjunction with messagegenerationtype', type=str, nargs='?', default='uniform')
-    parser.add_argument('--sybil-number', help='Number of sybil messages to send at each tower.', type=int, nargs='?', default=0)
+    parser.add_argument('--dos-number', help='Number of dos messages to send at each tower.', type=int, nargs='?', default=0)
 
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
@@ -52,17 +52,14 @@ def main():
     message_generation_type = args.messagegenerationtype
     deliveryratiotype = args.deliveryratiotype
     distributiontype = args.distributiontype
-    sybil_number = args.sybil_number
-
+    dos_number = args.dos_number
     message_sending_hours = ((end_day - start_day) * 24) - cooldown
-
-
     h = 0
-    print message_sending_hours
-    print "Configuration (configuration, start, end, number, city, threshold, sending hours): ", configuration, start_day, end_day, number_of_messages, city, threshold, message_sending_hours
+    print(message_sending_hours)
+    print("Configuration (configuration, start, end, number, city, threshold, sending hours): ", configuration, start_day, end_day, number_of_messages, city, threshold, message_sending_hours)
 
-    for current_day in xrange(start_day, end_day):
-        for current_hour in xrange(0,24):
+    for current_day in range(start_day, end_day):
+        for current_hour in range(0,24):
             current_data_file = DATA_FILE_PREFIX + str(city) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
             users_this_hour = []
             with open(current_data_file) as data:
@@ -73,21 +70,15 @@ def main():
                     overall_network_state[h][tower_id] = len(set(user_ids.split("|")))
             users_this_hour = set(users_this_hour)
             active_userpool_per_hour[h] = users_this_hour
-
             h += 1
-
             for u in users_this_hour:
                 userpool[u] += 1
-    dellist = []
-    for key, value in userpool.iteritems():
-        if value < threshold:
-            dellist.append(key)
-    print "Total users seen: ", len(userpool)
+    print("Total users seen: ", len(userpool))
     allusers = dict(userpool)
-    for u in dellist:
-        del userpool[u]
-    print "Users above threshold: ", len(userpool), " percentage: ", (float(len(userpool))/float(len(allusers)) * 100), "%"
-    users_in_pool = userpool.keys()
+    #faster method to delete
+    userpool = dict((k, v) for (k, v) in userpool.items() if v >= threshold)
+    print("Users above threshold: ", len(userpool), " percentage: ", (float(len(userpool))/float(len(allusers)) * 100), "%")
+    users_in_pool = list(userpool.keys())
     current_message_file = SEED_FILE_PREFIX + str(configuration) + CONFIGURATION_FILE_FORMAT
 # CONFIG FILE FORMAT:
 # length of all users, length of user pool
@@ -96,82 +87,47 @@ def main():
 # Start day
 # End day
 # Seed
+    config = {}
+    config["alluserslen"] = len(allusers)
+    config["userpoollen"] = len(userpool)
+    # Dropping writing user pool, not really used, only there for possible need to debug.
+    # config["userpool"] = users_in_pool
+    config["city"] = city
+    config["start-day"] = start_day
+    config["end-day"] = end_day
+    config["seed"] = seed
+    config["queuesize"] = queuesize
+    config["percentagehoursactive"] = percentage_hours_active
+    config["messagegenerationtype"] = message_generation_type
+    config["deliveryratiotype"] = deliveryratiotype
+    config["distributiontype"] = distributiontype
+    config["threshold"] = threshold
+    config["dos-number"] = dos_number
 
-#########create threshold specific data folders###################################
-    foldername = DATA_FILE_PREFIX + str(city) + "_" + str(threshold)
-
-    if threshold != 0:
-        if not os.path.exists(os.getcwd() + "/" + foldername):
-
-            os.makedirs(os.getcwd() + "/" + foldername)
-            for current_day in xrange(start_day, end_day):
-                for current_hour in xrange(0,24):
-
-                    current_output_data_file = foldername + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
-                    thresh_out = open(current_output_data_file, 'w')
-                    current_data_file = DATA_FILE_PREFIX + str(city) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
-                    users_this_hour = []
-                    print "Filtering Users : hour %d , day %d " %(current_hour, current_day)
-                    with open(current_data_file) as data:
-                        for entry in data:
-                            hour, tower_id, user_ids = entry.split(",")
-                            user_ids = user_ids.strip().split("|")
-                            threshold_users_per_tower = [user for user in user_ids if user in users_in_pool]
-
-                            if len(threshold_users_per_tower) != 0:
-                                out_row = hour + "," + tower_id + "," + "|".join(threshold_users_per_tower)
-                                thresh_out.write(out_row + "\n")
-
-                    thresh_out.close()
-        else:
-            print "Folder for the threshold already exists"
-
-####################################################################################
-
-    with open(current_message_file, "w+") as out_file:
-        out_file.write(str(len(allusers)) + "," + str(len(userpool)))
-        out_file.write("\n")
-        for u in userpool.iterkeys():
-            out_file.write("," + u)
-        out_file.write("\n")
-        out_file.write(str(city) + "\n")
-        out_file.write(str(start_day) + "\n")
-        out_file.write(str(end_day) + "\n")
-        out_file.write(str(seed) + "\n")
-        out_file.write(str(queuesize) + "\n")
-        out_file.write(str(percentage_hours_active) + "\n")
-        out_file.write(str(message_generation_type) + "\n")
-        out_file.write(str(deliveryratiotype) + "\n")
-        out_file.write(str(distributiontype) + "\n")
-        out_file.write(str(threshold) + "\n")
-        out_file.write(str(sybil_number) + "\n")
-
-    print "Generating: ", current_message_file
+    print("Generating messages for config message file", current_message_file)
     distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype, start_day, end_day, city, users_in_pool)
-    # ID, TTL, Source, Destination, hop, trust
+    print(distribution)
     random.seed(seed)
-
-    for hour in xrange(message_sending_hours):
+    messages = []
+    for hour in range(message_sending_hours):
         message_number = distribution[hour]
-
-        with open(current_message_file, "a+") as out_file:
-
-            for i in xrange(int(math.ceil(message_number))):
-
-                id = DATA_FILE_PREFIX + str(hour) + "_" + str(i)
-
-                # Don't use the message_generation_type flag for now, maybe need it in the future.
-                # if message_generation_type == 1:
-                src, dst = random.sample(userpool.keys(), 2)
-                print "Msg No: %d, Current hour %d --> Sources Pool Size: %d ; Destinations Pool Size: %d for threshold %d" % (i, hour, len(userpool), len(userpool), threshold)
-
-                src = str(src)
-                dst = str(dst)
-                ttl = "72"
-                hop = "0"
-                trust = "1"
-                out_file.write(getline(hour, id, ttl, src, dst, hop, trust))
-                out_file.write("\n")
+        for i in range(int(math.ceil(message_number))):
+            message = {}
+            message["hour"] = hour
+            message["id"] = DATA_FILE_PREFIX + str(hour) + "_" + str(i)
+            # Don't use the message_generation_type flag for now, maybe need it in the future.
+            # if message_generation_type == 1:
+            src, dst = random.sample(userpool.keys(), 2)
+            message["src"] = src
+            message["dst"] = dst
+            message["ttl"] = 72
+            message["hop"] = 0
+            message["trust"] = 1
+            messages.append(message)
+    config["messages"] = messages
+    with open(current_message_file, "w+") as outfile:
+        json.dump(config, outfile)
+    print("Message generation complete and written to file:", current_message_file)
 
 def get_message_distribution(sending_hours, total_messages, dist_type, start, end, city, users):
     dictionary = {}
@@ -180,9 +136,9 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
 
         overflow = total_messages % sending_hours
 
-        for i in xrange(0, sending_hours):
-            dictionary[i] = total_messages / sending_hours
-        for i in xrange(0, overflow):
+        for i in range(0, sending_hours):
+            dictionary[i] = int(total_messages / sending_hours)
+        for i in range(0, overflow):
             dictionary[i] += 1
         return dictionary
 
@@ -190,7 +146,7 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
         smscounter = defaultdict(int)
         smstotal = 0
         tot = 0
-        for day in xrange(start, end):
+        for day in range(start, end):
             commsfile = DATA_FILE_PREFIX + str(city) + "/" + str(day) + COMMS_AGGREGATE_FILE_FORMAT
             with open(commsfile) as data:
                 for entry in data:
@@ -202,18 +158,18 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
                         smscounter[current_hour] = int(smsnum.strip())
                         smstotal += int(smsnum.strip())
         # If this gives a Key Error, there's something wrong with the data.
-        for i in xrange(0, sending_hours):
+        for i in range(0, sending_hours):
             scaling = float(smscounter[i]) / smstotal
             dictionary[i] = int(math.ceil(scaling * total_messages))
             tot += dictionary[i]
-        print "Total messages:", tot
+        print("Total messages:", tot)
         return dictionary
 
     elif dist_type == 'user_sms_based':
         smscounter = defaultdict(int)
         smstotal = 0
         tot = 0
-        for day in xrange(start, end):
+        for day in range(start, end):
             commsfile = DATA_FILE_PREFIX + str(city) + "/" + str(day) + COMMS_USER_FILE_FORMAT
             with open(commsfile) as data:
                 for entry in data:
@@ -225,11 +181,11 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
                         if user.strip() in users:
                             smscounter[current_hour] += int(smsnum.strip())
                             smstotal += int(smsnum.strip())
-        for i in xrange(0, sending_hours):
+        for i in range(0, sending_hours):
             scaling = float(smscounter[i]) / smstotal
             dictionary[i] = int(math.ceil(scaling * total_messages))
             tot += dictionary[i]
-        print "Total Messages:", tot
+        print("Total Messages:", tot)
         return dictionary
 
     elif dist_type == 'user_activity_based':
@@ -237,9 +193,9 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
         h = 0
         total = 0
         total_msgs_sent = 0
-        for i in xrange(0, sending_hours):
+        for i in range(0, sending_hours):
             users = []
-            for tower, num_users in overall_network_state[i].iteritems():
+            for tower, num_users in overall_network_state[i].items():
                 users.append(num_users)
 
             medians[i] = np.median(users)
@@ -247,14 +203,14 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
 
         total_msgs_sent = 0
 
-        for i in xrange(0, sending_hours):
+        for i in range(0, sending_hours):
 
              dictionary[i] = int(math.ceil((medians[i]/total) * total_messages))
              total_msgs_sent += dictionary[i]
 
         overflow = total_messages - total_msgs_sent
 
-        for i in xrange(0, overflow):
+        for i in range(0, overflow):
             dictionary[i] += 1
         return dictionary
 
@@ -264,33 +220,26 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
         users_per_hour = {}
         total_msgs_sent = 0
 
-        for i in xrange(0, sending_hours):
+        for i in range(0, sending_hours):
             users_sum = 0
-            for tower, num_users in overall_network_state[i].iteritems():
+            for tower, num_users in overall_network_state[i].items():
                 users_sum += num_users
 
             total_users += users_sum
 
             users_per_hour[i] = users_sum
 
-        for i in xrange(0, sending_hours):
+        for i in range(0, sending_hours):
             dictionary[i] = int(math.ceil((users_per_hour[i]/total_users) * total_messages))
             total_msgs_sent += dictionary[i]
 
         overflow = total_messages - total_msgs_sent
 
 
-        for i in xrange(0, overflow):
+        for i in range(0, overflow):
             dictionary[i] += 1
 
         return dictionary
-
-def getline(*args):
-    retstr = str(args[0])
-    dlim = ','
-    for i in args[1:]:
-        retstr = retstr + dlim + str(i)
-    return retstr
 
 if __name__ == "__main__":
     main()
