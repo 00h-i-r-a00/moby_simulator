@@ -70,13 +70,13 @@ def main():
     dos_number = config["dos-number"]
     messages = config["messages"]
     for message in messages:
-        message_queue_map[message["hour"]] = Message(
+        message_queue_map[message["hour"]].append(Message(
                 message["id"],
                 message["ttl"],
                 message["src"],
                 message["dst"],
                 message["hour"],
-                message["trust"])
+                message["trust"]))
         total_messages2 += 1
     message_delay_file = RESULT_FILE_PREFIX + str(configuration) + '_message_delays.csv'
     for current_day in list(range(start_day, end_day)):
