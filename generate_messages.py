@@ -34,7 +34,8 @@ def main():
     parser.add_argument('--messagegenerationtype', help='Original Criteria or Selectively changing sources and destinations', type=int, nargs='?', default=1)
     parser.add_argument('--distributiontype', help='2 types -> "uniform" or "user-activity-based" ; used in conjunction with messagegenerationtype', type=str, nargs='?', default='uniform')
     parser.add_argument('--dos-number', help='Number of dos messages to send at each tower.', type=int, nargs='?', default=0)
-
+    parser.add_argument('--jam-tower', help='Percentage of towers to jam.', type=int, nargs='?', default=0)
+    parser.add_argument('--jam-tower-logic', help='The logic used to pick towers to jam.', type=int, nargs='?', default=0)
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
     start_day = args.start_day
@@ -53,6 +54,8 @@ def main():
     deliveryratiotype = args.deliveryratiotype
     distributiontype = args.distributiontype
     dos_number = args.dos_number
+    jam_tower = args.jam_tower
+    jam_tower_logic = args.jam_tower_logic
     message_sending_hours = ((end_day - start_day) * 24) - cooldown
     h = 0
     print(message_sending_hours)
@@ -80,13 +83,6 @@ def main():
     print("Users above threshold: ", len(userpool), " percentage: ", (float(len(userpool))/float(len(allusers)) * 100), "%")
     users_in_pool = list(userpool.keys())
     current_message_file = SEED_FILE_PREFIX + str(configuration) + CONFIGURATION_FILE_FORMAT
-# CONFIG FILE FORMAT:
-# length of all users, length of user pool
-# All users, comma seperated.
-# City number
-# Start day
-# End day
-# Seed
     config = {}
     config["alluserslen"] = len(allusers)
     config["userpoollen"] = len(userpool)
@@ -103,7 +99,8 @@ def main():
     config["distributiontype"] = distributiontype
     config["threshold"] = threshold
     config["dos-number"] = dos_number
-
+    config["jam-tower"] = jam_tower
+    config["jam-tower-logic"] = jam_tower_logic
     print("Generating messages for config message file", current_message_file)
     distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype, start_day, end_day, city, users_in_pool)
     print(distribution)
