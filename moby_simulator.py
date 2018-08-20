@@ -92,79 +92,76 @@ def main():
                 print("Message Delivery count: ", message_delivery_count, " of: ", total_messages)
                 print("Delivery rate: ", (float(message_delivery_count) / total_messages)*100, "%")
             print("Processing hour: ", current_hour, " File: ", current_data_file)
-            try:
-                with open(current_data_file) as data:
-                    for entry in data:
-                        # Just calcuate this hours state, no modification to last hour.
-                        # All modifications and related logic at the end of the hour.
-                        hour, tower_id, user_ids = entry.split(",")
-                        user_ids = user_ids.strip()
-                        users_this_hour += user_ids.split("|")
-                        current_state = set(user_ids.split("|"))
-                        network_state_new[tower_id] = current_state
-                print("Users in all towers(double counted):", len(users_this_hour))
-                message_hour = current_hour + (24 * (current_day - start_day))
-                for msg in message_queue_map[message_hour]:
-                    message_queue[msg.src][msg.id] = msg
-                    dirty_nodes.append(msg.src)
-                    total_messages1 += 1
-                users_this_hour = set(users_this_hour)
-                print("Users seen this hour: ", len(users_this_hour))
-                changes_added = changes_removed = []
-                if not first_state:
-                    for tower in network_state_new.keys():
-                        # Nodes that are new to a tower need to trigger msg exchanges, ignore this for first run
-                        # as the first run marks all of them as new!
-                        transitions_added = network_state_new[tower].difference(network_state_old[tower])
-                        transitions_removed = network_state_old[tower].difference(network_state_new[tower])
-                        changes_added += transitions_added
-                        changes_removed += transitions_removed
-                        dirty_nodes += transitions_added
-                print("Network changes added: ", len(changes_added), " removed: ", len(changes_removed))
-                print("Total dirty nodes: ", len(dirty_nodes))
-                first_state = False
-                print("Simulating message exchange on all nodes that belong to a network.")
-                queue_occupancy[str(current_day) + "," + str(current_hour)] = defaultdict()
+            with open(current_data_file) as data:
+                for entry in data:
+                    # Just calcuate this hours state, no modification to last hour.
+                    # All modifications and related logic at the end of the hour.
+                    hour, tower_id, user_ids = entry.split(",")
+                    user_ids = user_ids.strip()
+                    users_this_hour += user_ids.split("|")
+                    current_state = set(user_ids.split("|"))
+                    network_state_new[tower_id] = current_state
+            print("Users in all towers(double counted):", len(users_this_hour))
+            message_hour = current_hour + (24 * (current_day - start_day))
+            for msg in message_queue_map[message_hour]:
+                message_queue[msg.src][msg.id] = msg
+                dirty_nodes.append(msg.src)
+                total_messages1 += 1
+            users_this_hour = set(users_this_hour)
+            print("Users seen this hour: ", len(users_this_hour))
+            changes_added = changes_removed = []
+            if not first_state:
                 for tower in network_state_new.keys():
-                    users_in_tower = network_state_new[tower]
-                    perform_dos_exchanges(dos_number, tower, users_in_tower, current_day, current_hour)
-                    if queuesize == 0:
-                        if perform_message_exchanges(users_in_tower, current_day, current_hour):
-                            dirty_nodes += users_in_tower
-                        else:
-                            pass
+                    # Nodes that are new to a tower need to trigger msg exchanges, ignore this for first run
+                    # as the first run marks all of them as new!
+                    transitions_added = network_state_new[tower].difference(network_state_old[tower])
+                    transitions_removed = network_state_old[tower].difference(network_state_new[tower])
+                    changes_added += transitions_added
+                    changes_removed += transitions_removed
+                    dirty_nodes += transitions_added
+            print("Network changes added: ", len(changes_added), " removed: ", len(changes_removed))
+            print("Total dirty nodes: ", len(dirty_nodes))
+            first_state = False
+            print("Simulating message exchange on all nodes that belong to a network.")
+            queue_occupancy[str(current_day) + "," + str(current_hour)] = defaultdict()
+            for tower in network_state_new.keys():
+                users_in_tower = network_state_new[tower]
+                perform_dos_exchanges(dos_number, tower, users_in_tower, current_day, current_hour)
+                if queuesize == 0:
+                    if perform_message_exchanges(users_in_tower, current_day, current_hour):
+                        dirty_nodes += users_in_tower
                     else:
-                        if perform_message_exchanges_with_queue(users_in_tower, queuesize, current_day, current_hour):
-                            dirty_nodes += users_in_tower
+                        pass
+                else:
+                    if perform_message_exchanges_with_queue(users_in_tower, queuesize, current_day, current_hour):
+                        dirty_nodes += users_in_tower
+                    else:
+                        pass
+            for user, mq in message_queue.items():
+                dellist = []
+                for key, msg in mq.items():
+                    # print "Dst: ", msg.dst, "User:", user
+                    if msg.id not in message_delivered[user]:
+                        if msg.dst == user and msg.id:
+                            message_delivery_count += 1
+                            message_delivered[user].append(msg.id)
+                            if msg.id not in message_delays:
+                                hour_of_simulation = ((current_day - start_day)*24) + current_hour
+                                message_delays[msg.id] = int(hour_of_simulation - int(msg.hop))
+                                print("Message delay: ", message_delays[msg.id])
+                            msg.ttl = 60
+                        elif msg.ttl > 1:
+                            msg.ttl -= 1
                         else:
-                            pass
-                for user, mq in message_queue.items():
-                    dellist = []
-                    for key, msg in mq.items():
-                        # print "Dst: ", msg.dst, "User:", user
-                        if msg.id not in message_delivered[user]:
-                            if msg.dst == user and msg.id:
-                                message_delivery_count += 1
-                                message_delivered[user].append(msg.id)
-                                if msg.id not in message_delays:
-                                    hour_of_simulation = ((current_day - start_day)*24) + current_hour
-                                    message_delays[msg.id] = int(hour_of_simulation - int(msg.hop))
-                                    print("Message delay: ", message_delays[msg.id])
-                                msg.ttl = 60
-                            elif msg.ttl > 1:
-                                msg.ttl -= 1
-                            else:
-                                dellist.append(msg.id)
-                    for id in dellist:
-                        del message_queue[user][id]
-                for key, value in network_state_new.items():
-                    network_state_old[key] = value
-                dirty_nodes = []
-                total_messages = total_messages1 if deliveryratiotype == 1 else total_messages2
-                with open(result_file, "a+") as out_file:
-                    out_file.write(getline(current_day, current_hour, len(users_this_hour), len(dirty_nodes), message_delivery_count, total_messages))
-            except Exception as exc:
-                print("Exception", exc)
+                            dellist.append(msg.id)
+                for id in dellist:
+                    del message_queue[user][id]
+            for key, value in network_state_new.items():
+                network_state_old[key] = value
+            dirty_nodes = []
+            total_messages = total_messages1 if deliveryratiotype == 1 else total_messages2
+            with open(result_file, "a+") as out_file:
+                out_file.write(getline(current_day, current_hour, len(users_this_hour), len(dirty_nodes), message_delivery_count, total_messages))
     with open(result_file_queue_occupancy, "w") as outfile:
         for day in list(range(start_day, end_day)):
             for hour in list(range(0,24)):
