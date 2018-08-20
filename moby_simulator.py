@@ -5,6 +5,7 @@ import sys
 import time
 import pdb
 import json
+import random
 
 DATA_FILE_PREFIX = "data/"
 CONFIG_FILE_PREFIX = "data/seeds/"
@@ -68,6 +69,8 @@ def main():
     distributiontype = config["distributiontype"]
     threshold = config["threshold"]
     dos_number = config["dos-number"]
+    jam_tower = config["jam-tower"]
+    jam_tower_logic = config["jam-tower-logic"]
     messages = config["messages"]
     for message in messages:
         message_queue_map[message["hour"]].append(Message(
@@ -110,7 +113,18 @@ def main():
             users_this_hour = set(users_this_hour)
             print("Users seen this hour: ", len(users_this_hour))
             changes_added = changes_removed = []
-            if not first_state:
+            if first_state:
+                # Pick which towers to be jammed.
+                if jam_tower > 0:
+                    if jam_tower_logic == 0:
+                        jam_num = int(float(jam_tower/100)*len(network_state_new.keys()))
+                        print("Jamming ", jam_tower, "% ", jam_num, " towers of ", len(network_state_new.keys()))
+                        jammed_towers = random.sample(network_state_new.keys(), jam_num)
+                    else:
+                        # TODO: Need to implement logic for picking towers to jam.
+                        pass
+
+            else:
                 for tower in network_state_new.keys():
                     # Nodes that are new to a tower need to trigger msg exchanges, ignore this for first run
                     # as the first run marks all of them as new!
@@ -124,6 +138,10 @@ def main():
             first_state = False
             print("Simulating message exchange on all nodes that belong to a network.")
             queue_occupancy[str(current_day) + "," + str(current_hour)] = defaultdict()
+            # Remove jammed towers.
+            # This list would be populated based on the simulations config.
+            for tower in jammed_towers:
+                network_state_new.pop(tower, None)
             for tower in network_state_new.keys():
                 users_in_tower = network_state_new[tower]
                 perform_dos_exchanges(dos_number, tower, users_in_tower, current_day, current_hour)
