@@ -162,9 +162,7 @@ def main():
                 dirty_nodes = []
                 total_messages = total_messages1 if deliveryratiotype == 1 else total_messages2
                 with open(result_file, "a+") as out_file:
-                    dlim = ','
                     out_file.write(getline(current_day, current_hour, len(users_this_hour), len(dirty_nodes), message_delivery_count, total_messages))
-                    out_file.write("\n")
             except Exception as exc:
                 print("Exception", exc)
     with open(result_file_queue_occupancy, "w") as outfile:
@@ -172,11 +170,11 @@ def main():
             for hour in list(range(0,24)):
                 key = str(day) + "," + str(hour)
                 for user, queueocc in queue_occupancy[key].items():
-                    outfile.write(str(key) + "," + str(user) + "," + str(queueocc) + '\n')
+                    outfile.write(getline(key, user, queueocc))
     with open(message_delay_file, "w") as outfile:
         for user, msgids in message_delivered.items():
             for msgid in msgids:
-                outfile.write(str(msgid) + "," + str(message_delays[msgid]) + "\n")
+                outfile.write(getline(msgid, message_delays[msgid]))
     print ("Simulation Done!")
 
 def getline(*args):
@@ -184,6 +182,7 @@ def getline(*args):
     dlim = ','
     for i in args[1:]:
         retstr = retstr + dlim + str(i)
+    retstr += '\n'
     return retstr
 
 def clean_users(users):
