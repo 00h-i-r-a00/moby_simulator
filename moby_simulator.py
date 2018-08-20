@@ -37,7 +37,6 @@ class Message:
 def main():
     parser = argparse.ArgumentParser(description='Moby simulation script.')
     parser.add_argument('--configuration', help='Configuration to use for the simulation', type=str, nargs='?', default=0)
-
     args = parser.parse_args(sys.argv[1:])
     configuration = args.configuration
     print("Configuration file: ", configuration)
@@ -50,10 +49,8 @@ def main():
     global network_state_old
     dirty_nodes = []
     configuration_file = CONFIG_FILE_PREFIX + str(configuration) + CONFIG_FILE_FORMAT
-
     result_file = RESULT_FILE_PREFIX + str(configuration) + RESULT_FILE_FORMAT
     result_file_queue_occupancy = RESULT_FILE_PREFIX + str(configuration) + '_queue_occupancy' + RESULT_FILE_FORMAT
-
     # Parse the .config file
     print("Parsing configuration and messages from seed: ", configuration_file)
     with open(configuration_file) as conffile:
@@ -85,11 +82,10 @@ def main():
     for current_day in list(range(start_day, end_day)):
         for current_hour in list(range(0,24)):
             network_state_new = defaultdict(set)
-            current_data_file = DATA_FILE_PREFIX + str(city_number) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
-            current_data_file_threshold = DATA_FILE_PREFIX + str(city_number) + "_" + str(threshold) + "/" + str(start_day) + "/" + str(numdays) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
-            if threshold != "0":
-                current_data_file = current_data_file_threshold
-
+            if threshold == 0:
+                current_data_file = DATA_FILE_PREFIX + str(city_number) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
+            else:
+                current_data_file = DATA_FILE_PREFIX + str(city_number) + "_" + str(threshold) + "/" + str(start_day) + "/" + str(numdays) + "/" + str(current_day) + "_" +              str(current_hour) + DATA_FILE_FORMAT
             users_this_hour = []
             if not first_state:
                 total_messages = total_messages1 if deliveryratiotype == 1 else total_messages2
@@ -161,32 +157,26 @@ def main():
                                 dellist.append(msg.id)
                     for id in dellist:
                         del message_queue[user][id]
-
                 for key, value in network_state_new.items():
                     network_state_old[key] = value
                 dirty_nodes = []
                 total_messages = total_messages1 if deliveryratiotype == 1 else total_messages2
-
                 with open(result_file, "a+") as out_file:
                     dlim = ','
                     out_file.write(getline(current_day, current_hour, len(users_this_hour), len(dirty_nodes), message_delivery_count, total_messages))
                     out_file.write("\n")
-
             except Exception as exc:
                 print("Exception", exc)
-
     with open(result_file_queue_occupancy, "w") as outfile:
         for day in list(range(start_day, end_day)):
             for hour in list(range(0,24)):
                 key = str(day) + "," + str(hour)
                 for user, queueocc in queue_occupancy[key].items():
                     outfile.write(str(key) + "," + str(user) + "," + str(queueocc) + '\n')
-
     with open(message_delay_file, "w") as outfile:
         for user, msgids in message_delivered.items():
             for msgid in msgids:
                 outfile.write(str(msgid) + "," + str(message_delays[msgid]) + "\n")
-
     print ("Simulation Done!")
 
 def getline(*args):
