@@ -320,34 +320,39 @@ def perform_message_exchanges_with_queue(users, queuesize, current_day, current_
 					mq1_len = len(mq1)
 					
 					if len(mq2) < queuesize:
-						mq2.update(mq1)
+						#mq2.update(mq1)
 						for key in mq1.keys():
+							mq2[key] = mq1[key]
 							mq2[key][0] = 1
-					else:						
+					else:					
 						mq2_sorted = sorted(mq2.items(), key=lambda x: x[1][0], reverse=True)[:-mq1_len or None]						
 						#for counter in range(mq1_len):
 						#	popped = mq2_sorted.pop()
 							
 						mq2 = dict(mq2_sorted)
-						mq2.update(mq1)
+						#mq2.update(mq1)
 						for key in mq1.keys():
-							mq2[key][0] = 1	
+							mq2[key] = mq1[key]
+							mq2[key][0] = 1
+								
 						
 				else:
 					if len(mq2) < queuesize:
 						#set priority as 0 for the incoming messages
 						#mq1_copy = dict(map(lambda x: (x[0], (0, x[1][1])),  mq1.items()))
 						#mq1_copy = {msg: (0, prio_tuple[1]) for (msg, prio_tuple) in mq1.items()}
-						mq2.update(mq1)
+						#mq2.update(mq1)
 						for key in mq1.keys():
+							mq2[key] = mq1[key]
 							mq2[key][0] = 0
 
 			else:
 				if len(mq2) < queuesize:
 					#mq1_copy = {msg: (0, prio_tuple[1]) for (msg, prio_tuple) in mq1.items()}
 					#mq1_copy = dict(map(lambda x: (x[0], (0, x[1][1])),  mq1.items()))
-					mq2.update(mq1)
+					#mq2.update(mq1)
 					for key in mq1.keys():
+						mq2[key] = mq1[key]
 						mq2[key][0] = 0
 
 
@@ -360,32 +365,36 @@ def perform_message_exchanges_with_queue(users, queuesize, current_day, current_
 					#mq2_copy = dict(map(lambda x: (x[0], (1, x[1][1])),  mq2.items()))
 					mq2_len = len(mq2)
 					if len(mq1) < queuesize:
-						mq1.update(mq2)
+						#mq1.update(mq2)
 						for key in mq2.keys():
+							mq1[key] = mq2[key]
 							mq1[key][0] = 1
 					else:
 						mq1_sorted = sorted(mq1.items(), key=lambda x: x[1][0], reverse=True)[:-mq2_len or None]
 						#for counter in range(mq2_len):
 						#	popped = mq1_sorted.pop()
 						mq1 = dict(mq1_sorted)
-						mq1.update(mq2)
+						#mq1.update(mq2)
 						for key in mq2.keys():
+							mq1[key] = mq2[key]
 							mq1[key][0] = 1
 						
 				else:
 					if len(mq1) < queuesize:
 						 #mq2_copy = {msg: (0, prio_tuple[1]) for (msg, prio_tuple) in mq2.items()}
 						 #mq2_copy = dict(map(lambda x: (x[0], (0, x[1][1])),  mq2.items()))
-						 mq1.update(mq2)
+						 #mq1.update(mq2)
 						 for key in mq2.keys():
+							 mq1[key] = mq2[key]
 							 mq1[key][0] = 0
 
 			else:
 				if len(mq1) < queuesize:
 					#mq2_copy = {msg: (0, prio_tuple[1]) for (msg, prio_tuple) in mq2.items()}
 					#mq2_copy = dict(map(lambda x: (x[0], (0, x[1][1])),  mq2.items()))
-					mq1.update(mq2)
+					#mq1.update(mq2)
 					for key in mq2.keys():
+						mq1[key] = mq2[key]
 						mq1[key][0] = 0
 
 			#######################################################
