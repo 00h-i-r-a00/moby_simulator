@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import json
 import itertools
 import os
@@ -43,16 +43,15 @@ distributiontype = ['uniform', 'user_activity_based', 'total_users_based', 'regi
 #infinite since we are intially taking an estimate of the possible PDRs
 thresholds = [0, 2, 4, 6, 8, 10, 12]
 max_number = 10 #max number of dos messages to send
-dos_numbers = [number for number in xrange(1, max_number + 1, 1)]
+dos_numbers = [number for number in range(1, max_number + 1, 1)]
 dos_numbers = [0]
+# (% towers to jam, jamming logic)
+jamtower = [(0, 0), (10, 0), (10, 1)] # Different jamming scenarios.
 
 def main():
     config = {}
     config_ctr = 0
-
-    total_configs = len(start_days) * len(number_of_days) * len(cities) * len(cooldowns) * len(queuesizes) * len(seeds) * len(messagegenerationtype)* len(percentagehoursactive) * len(deliveryratiotype) * len(distributiontype) * len(thresholds) * len(dos_numbers)
-    print "Cleaning current config files."
-
+    print("Cleaning current config files and writing new ones.")
     for f in achtungs:
         if os.path.isfile(os.getcwd() + '/' + f + '.json'):
             os.remove(f+".json")
@@ -70,33 +69,34 @@ def main():
                                             for val_disttype in distributiontype:
                                                 for val_threshold in thresholds:
                                                     for val_dosnumber in dos_numbers:
-                                                        current_achtung = next(achtungpool)
-                                                        config["start-day"] = val_start
-                                                        config["end-day"] = val_start+val_nod
-                                                        config["ttl"] = val_nod * 24
-                                                        config["city-number"] = val_city
-                                                        config["cooldown"] = val_cd
-                                                        config["number"] = val_nm
-                                                        config["queuesize"] = val_queue
-                                                        config["seed"] = val_seed
-                                                        config["messagegenerationtype"] = val_msgtype
-                                                        config["percentagehoursactive"] = val_active
-                                                        config["deliveryratiotype"] = val_delratio
-                                                        config["distributiontype"] = val_disttype
-                                                        config["configuration"] = str(run_number) + "_" + str(config_ctr)
-                                                        config["threshold"] = val_threshold
-                                                        config["dos-number"] = val_dosnumber
-                                                        config_ctr += 1
+                                                        for val_jamtower in jamtower:
+                                                            current_achtung = next(achtungpool)
+                                                            config["start-day"] = val_start
+                                                            config["end-day"] = val_start+val_nod
+                                                            config["ttl"] = val_nod * 24
+                                                            config["city-number"] = val_city
+                                                            config["cooldown"] = val_cd
+                                                            config["number"] = val_nm
+                                                            config["queuesize"] = val_queue
+                                                            config["seed"] = val_seed
+                                                            config["messagegenerationtype"] = val_msgtype
+                                                            config["percentagehoursactive"] = val_active
+                                                            config["deliveryratiotype"] = val_delratio
+                                                            config["distributiontype"] = val_disttype
+                                                            config["configuration"] = str(run_number) + "_" + str(config_ctr)
+                                                            config["threshold"] = val_threshold
+                                                            config["dos-number"] = val_dosnumber
+                                                            config["jam-tower"] = val_jamtower[0]
+                                                            config["jam-tower-logic"] = val_jamtower[1]
+                                                            config_ctr += 1
+                                                            with open(current_achtung+".json", 'a+') as outfile:
+                                                                outfile.write("!")
+                                                                json.dump(config, outfile)
+                                                            #keeping track of the parameters used inside configurations to help with graphs
+                                                            with open('data/configs/' + config["configuration"] + '.txt', 'w') as out:
+                                                                json.dump(config, out)
 
-                                                        with open(current_achtung+".json", 'a+') as outfile:
-                                                            outfile.write("!")
-                                                            json.dump(config, outfile)
-
-                                #keeping track of the parameters used inside configurations to help with graphs
-                                                        with open('data/configs/' + config["configuration"] + '.txt', 'w') as out:
-                                                            json.dump(config, out)
-
-    print config_ctr, "Uploading configs."
+    print("Uploading configs.", config_ctr)
     os.system("scp achtung*.json achtung:moby_simulator/")
 
 if __name__ == "__main__":
