@@ -106,15 +106,6 @@ def main():
                         users_this_hour += user_ids.split("|")
                         current_state = set(user_ids.split("|"))
                         network_state_new[tower_id] = current_state
-                """
-                previous_state = network_state[tower_id]
-                transitions_added = new_state.difference(previous_state)
-                transitions_removed = previous_state.difference(new_state)
-                transitions_idle = new_state.intersection(previous_state)
-                """
-                # print "Added: ", transitions_added
-                # print "Removed: ", transitions_removed
-
                 print("Users in all towers(double counted):", len(users_this_hour))
                 message_hour = current_hour + (24 * (current_day - start_day))
                 for msg in message_queue_map[message_hour]:
