@@ -4,16 +4,19 @@ import itertools
 import os
 import os.path
 import pdb
+from datetime import datetime as dt
 ###create a directory to store all the configs######
 if not os.path.exists(os.getcwd() + '/data/configs'):
     os.makedirs(os.getcwd() + '/data/configs')
 
 ####################################################
 
-achtungs = ["achtung02", "achtung03", "achtung04", "achtung05", "achtung06", "achtung07", "achtung12", "achtung13", "achtung14", "achtung15", "achtung16", "achtung17"]
+achtungs = ["achtung02", "achtung03", "achtung04", "achtung05", "achtung06", "achtung07", "achtung10", "achtung11", "achtung12", "achtung13", "achtung14", "achtung15", "achtung16", "achtung17"]
 achtungpool = itertools.cycle(achtungs)
 
-run_number = 0
+# Makes keeping track of different runs easier than manually changing this counter.
+#YYYYMMDDHHMMSS
+run_number = dt.now().strftime("%Y%m%d%H%M%S")
 """
 first day of each week in the year 2009 i.e the days which represent all Mondays in 2009
 
