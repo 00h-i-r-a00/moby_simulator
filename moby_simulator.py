@@ -60,6 +60,8 @@ def main():
     start_day = config["start-day"]
     end_day = config["end-day"]
     seed = config["seed"]
+    # Seeding random so as to keep towers picked for jamming constant.
+    random.seed(seeds)
     queuesize = config["queuesize"]
     numdays = end_day - start_day
     # adding these two just for the sake of consistency
@@ -82,6 +84,7 @@ def main():
                 message["trust"]))
         total_messages2 += 1
     message_delay_file = RESULT_FILE_PREFIX + str(configuration) + '_message_delays.csv'
+    jammed_towers = []
     for current_day in list(range(start_day, end_day)):
         for current_hour in list(range(0,24)):
             network_state_new = defaultdict(set)
