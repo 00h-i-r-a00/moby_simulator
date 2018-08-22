@@ -106,6 +106,7 @@ def main():
     print(distribution)
     random.seed(seed)
     messages = []
+    userpool_keys = sorted(userpool.keys())
     for hour in range(message_sending_hours):
         message_number = distribution[hour]
         for i in range(int(math.ceil(message_number))):
@@ -114,7 +115,7 @@ def main():
             message["id"] = DATA_FILE_PREFIX + str(hour) + "_" + str(i)
             # Don't use the message_generation_type flag for now, maybe need it in the future.
             # if message_generation_type == 1:
-            src, dst = random.sample(userpool.keys(), 2)
+            src, dst = random.sample(userpool_keys, 2)
             message["src"] = src
             message["dst"] = dst
             message["ttl"] = 72
