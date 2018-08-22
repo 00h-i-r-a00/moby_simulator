@@ -8,7 +8,11 @@ from datetime import datetime as dt
 ###create a directory to store all the configs######
 if not os.path.exists(os.getcwd() + '/data/configs'):
     os.makedirs(os.getcwd() + '/data/configs')
-
+else:
+    #remove already existing configs
+    files = os.listdir(os.getcwd() + '/data/configs')
+    for f in files:
+        os.remove(os.getcwd() + '/data/configs/' + f)
 ####################################################
 
 achtungs = ["achtung02", "achtung03", "achtung04", "achtung05", "achtung06", "achtung07", "achtung10", "achtung11", "achtung12", "achtung13", "achtung14", "achtung15", "achtung16", "achtung17"]
