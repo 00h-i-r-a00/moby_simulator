@@ -1,9 +1,12 @@
 #!/bin/sh
-for server in achtung02 achtung03 achtung04 achtung05 achtung06 achtung07 achtung12 achtung13 achtung14 achtung15 achtung16 achtung17; do
+
+#run as ./get_per_node_memory_consumption.sh node1 node2 node3 | grep STATUS
+
+for server in "$@"; do
     ssh $server << 'EOF'
     num_proc=0
     sum_virt=0
-    
+
     procs=""
     procs=`pgrep -f moby_simulator.py`
     if [[ "$procs" ]]; then
@@ -14,18 +17,18 @@ for server in achtung02 achtung03 achtung04 achtung05 achtung06 achtung07 achtun
             sum_virt=`echo "$virt + $sum_virt" | bc -l`
 			let "num_proc++"
         done
-        
-        echo "Number of moby_simulator.py processes on node $server: $num_proc"
+
+        echo "STATUS: Number of moby_simulator.py processes on node $HOSTNAME: $num_proc"
         sum_virt=`echo "sum_virt / 1000000" | bc -l`
-        echo "Total Memory Consumption by moby_simulator.py on node $server: $sum_virt Gb"        
+        echo "STATUS: Total Memory Consumption by moby_simulator.py on node $HOSTNAME: $sum_virt Gb"
         total_mem_cons=`vmstat -n -s | grep "used memory" | awk '{print $1}'`
         tot_mem=`vmstat -n -s | grep "total memory" | awk '{print $1}'`
-        echo "Total Memory Consumption on node $server: $total_mem_cons"
-        echo "Total memory on node $server: $tot_mem"
-                
+        echo "STATUS: Total Used Memory On node $HOSTNAME: $total_mem_cons Gb"
+        echo "STATUS: Total Memory on node $HOSTNAME: $tot_mem Gb"
+
     else
-		echo "No monitor_moby_simulator.sh process running on node $server"
-        
+		echo "STATUS: No monitor_moby_simulator.sh process running on node $HOSTNAME"
+
     fi
 EOF
 done
