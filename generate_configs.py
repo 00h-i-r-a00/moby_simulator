@@ -100,6 +100,7 @@ def main():
                                                         with open('data/configs/' + config["configuration"] + '.txt', 'w') as out:
                                                             json.dump(config, out)
 
+    pdb.set_trace()
     print("Uploading configs.", config_ctr)
     os.system("scp achtung*.json achtung:moby_simulator/")
 
