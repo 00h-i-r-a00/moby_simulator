@@ -3,6 +3,7 @@
 #run as ./get_per_node_memory_consumption.sh node1 node2 node3 | grep STATUS
 
 for server in "$@"; do
+
     ssh $server << 'EOF'
     num_proc=0
     sum_virt=0
