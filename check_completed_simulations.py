@@ -16,8 +16,10 @@ def main():
     not_done = []
 
     for fi_ in files:
-        with open(path + fi_, 'r') as lines:
-            lastline = lines.readlines()[-1]
+        with open(path + fi_, 'r') as f:
+            lines = f.readlines()
+            lastline = '' if not lines else lines[-1]
+
             if 'Simulation Done' in lastline:
                 sim_done += 1
                 sim_done_list.append(fi_.replace('.nohup', '.txt'))
