@@ -23,11 +23,11 @@ for server in "$@"; do
         echo "STATUS: Total Memory Consumption by moby_simulator.py on node $HOSTNAME: $sum_virt Gb"
         total_mem_cons=`vmstat -n -s | grep "used memory" | awk '{print $1}'`
         tot_mem=`vmstat -n -s | grep "total memory" | awk '{print $1}'`
-        echo "STATUS: Total Used Memory On node $HOSTNAME: $total_mem_cons Gb"
-        echo "STATUS: Total Memory on node $HOSTNAME: $tot_mem Gb"
+        echo "STATUS: Total Used Memory On node $HOSTNAME: $total_mem_cons Kb"
+        echo "STATUS: Total Memory on node $HOSTNAME: $tot_mem Kb"
 
     else
-		echo "STATUS: No monitor_moby_simulator.sh process running on node $HOSTNAME"
+		echo "STATUS: No moby_simulator.sh process running on node $HOSTNAME"
 
     fi
 EOF
