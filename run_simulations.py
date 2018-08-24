@@ -29,7 +29,7 @@ def main():
     with open (hostname+".json") as configs:
         confs = configs.readline().strip().split("!")
 
-    confs = filter(None, confs)
+    confs = list(filter(None, confs))
     conf_pointer = 0
 
     while conf_pointer < len(confs):
