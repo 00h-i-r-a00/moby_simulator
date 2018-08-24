@@ -48,7 +48,7 @@ distributiontype = ['uniform', 'user_activity_based', 'total_users_based', 'regi
 #distributiontype = ['region_sms_based']
 #thresholds = [0, 2, 4, 6, 8, 10, 12]
 #infinite since we are intially taking an estimate of the possible PDRs
-thresholds = [0]
+thresholds = [2]
 max_number = 10 #max number of dos messages to send
 dos_numbers = [number for number in range(1, max_number + 1, 1)]
 dos_numbers = [0]
