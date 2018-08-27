@@ -26,6 +26,12 @@ for server in "$@"; do
         echo "STATUS: Total Used Memory On node $HOSTNAME: $total_mem_cons Kb"
         echo "STATUS: Total Memory on node $HOSTNAME: $tot_mem Kb"
 
+        difference=`echo "$total_mem - $total_mem_cons" | bc -l`
+
+        if [[ "$difference" -lt 20000000 ]]; then
+            echo "STATUS: ALERT ::: Only 20G left on node $server"
+        fi
+
     else
 		echo "STATUS: No moby_simulator.sh process running on node $HOSTNAME"
 
