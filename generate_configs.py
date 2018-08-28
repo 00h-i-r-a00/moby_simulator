@@ -33,7 +33,7 @@ first day of each week in the year 2009 i.e the days which represent all Mondays
 #ttl needs to be infinite which means it needs to be as much as the duration of the simulation
 
 start_days = [4, 11, 18, 25, 32, 39, 46, 53, 60, 67, 74, 81, 88, 95, 102, 109, 116, 123, 130, 137, 144, 151, 158, 165, 172, 179, 186, 193, 200, 207, 214, 221, 228, 235, 242, 249, 256, 263, 270, 277,284, 291, 298, 305, 312, 319, 326, 333, 340, 347, 354, 361]
-#start_days = [4, 11, 18, 25, 32]
+start_days = [4, 11, 18, 25, 32]
 number_of_days = [3, 4, 5]
 cities = [0]
 cooldowns = [24]
@@ -105,6 +105,9 @@ def main():
 
     print("Uploading configs.", config_ctr)
     os.system("scp achtung*.json achtung:moby_simulator/")
+
+    print("Uploading config contents")
+    os.system("scp -r data/configs/ achtung:moby_simulator/data/ ")
 
 if __name__ == "__main__":
     main()
