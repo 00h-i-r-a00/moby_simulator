@@ -61,7 +61,7 @@ def main():
     end_day = config["end-day"]
     seed = config["seed"]
     # Seeding random so as to keep towers picked for jamming constant.
-    random.seed(seeds)
+    random.seed(seed)
     queuesize = config["queuesize"]
     numdays = end_day - start_day
     # adding these two just for the sake of consistency
