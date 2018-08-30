@@ -145,7 +145,24 @@ def main():
             # This list would be populated based on the simulations config.
             for tower in jammed_towers:
                 network_state_new.pop(tower, None)
-            for tower in network_state_new.keys():
+            network_towers = sorted(network_state_new.keys())
+            saved_dirty_nodes = dirty_nodes
+            for tower in network_towers:
+                users_in_tower = network_state_new[tower]
+                perform_dos_exchanges(dos_number, tower, users_in_tower, current_day, current_hour)
+                if queuesize == 0:
+                    if perform_message_exchanges(users_in_tower, current_day, current_hour):
+                        dirty_nodes += users_in_tower
+                    else:
+                        pass
+                else:
+                    if perform_message_exchanges_with_queue(users_in_tower, queuesize, current_day, current_hour):
+                        dirty_nodes += users_in_tower
+                    else:
+                        pass
+            dirty_nodes = saved_dirty_nodes
+            network_towers.reverse()
+            for tower in network_towers:
                 users_in_tower = network_state_new[tower]
                 perform_dos_exchanges(dos_number, tower, users_in_tower, current_day, current_hour)
                 if queuesize == 0:
