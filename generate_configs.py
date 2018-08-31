@@ -5,6 +5,8 @@ import os
 import os.path
 import pdb
 from datetime import datetime as dt
+import subprocess
+
 ###create a directory to store all the configs######
 if not os.path.exists(os.getcwd() + '/data/configs'):
     os.makedirs(os.getcwd() + '/data/configs')
