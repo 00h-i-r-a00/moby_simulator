@@ -6,6 +6,7 @@ import os.path
 import pdb
 from datetime import datetime as dt
 import subprocess
+from collections import defaultdict
 
 ###create a directory to store all the configs######
 if not os.path.exists(os.getcwd() + '/data/configs'):
@@ -59,6 +60,7 @@ jamtower = [(0, 0), (10, 0), (10, 1)] # Different jamming scenarios.
 
 def main():
     config = {}
+    achtung_dict = defaultdict(list)
     config_ctr = 0
     print("Cleaning current config files and writing new ones.")
     for f in achtungs:
@@ -98,13 +100,14 @@ def main():
                                                             config["jam-tower"] = val_jamtower[0]
                                                             config["jam-tower-logic"] = val_jamtower[1]
                                                             config_ctr += 1
-                                                            with open(current_achtung+".json", 'a+') as outfile:
-                                                                outfile.write("!")
-                                                                json.dump(config, outfile)
+                                                            achtung_dict[current_achtung].append(config)
                                                             #keeping track of the parameters used inside configurations to help with graphs
                                                             with open('data/configs/' + config["configuration"] + '.txt', 'w') as out:
                                                                 json.dump(config, out)
-
+                                                            config = {}
+    for current_achtung in achtung_dict.keys():
+        with open(current_achtung+".json", 'w') as outfile:
+            json.dump(achtung_dict[current_achtung], outfile)
     print("Uploading configs.", config_ctr)
     os.system("scp achtung*.json achtung:moby_simulator/")
 
