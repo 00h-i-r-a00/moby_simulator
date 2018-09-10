@@ -5,7 +5,6 @@ import sys
 import time
 import pdb
 import json
-import random
 
 DATA_FILE_PREFIX = "data/"
 CONFIG_FILE_PREFIX = "data/seeds/"
@@ -60,8 +59,6 @@ def main():
     start_day = config["start-day"]
     end_day = config["end-day"]
     seed = config["seed"]
-    # Seeding random so as to keep towers picked for jamming constant.
-    random.seed(seed)
     queuesize = config["queuesize"]
     numdays = end_day - start_day
     # adding these two just for the sake of consistency
@@ -73,6 +70,7 @@ def main():
     dos_number = config["dos-number"]
     jam_tower = config["jam-tower"]
     jam_tower_logic = config["jam-tower-logic"]
+    jam_tower_list = config["jam-tower-list"]
     messages = config["messages"]
     for message in messages:
         message_queue_map[message["hour"]].append(Message(
@@ -84,7 +82,6 @@ def main():
                 message["trust"]))
         total_messages2 += 1
     message_delay_file = RESULT_FILE_PREFIX + str(configuration) + '_message_delays.csv'
-    jammed_towers = []
     for current_day in list(range(start_day, end_day)):
         for current_hour in list(range(0,24)):
             network_state_new = defaultdict(set)
@@ -116,18 +113,7 @@ def main():
             users_this_hour = set(users_this_hour)
             print("Users seen this hour: ", len(users_this_hour))
             changes_added = changes_removed = []
-            if first_state:
-                # Pick which towers to be jammed.
-                if jam_tower > 0:
-                    if jam_tower_logic == 0:
-                        jam_num = int(float(jam_tower/100)*len(network_state_new.keys()))
-                        print("Jamming ", jam_tower, "% ", jam_num, " towers of ", len(network_state_new.keys()))
-                        jammed_towers = random.sample(network_state_new.keys(), jam_num)
-                    else:
-                        # TODO: Need to implement logic for picking towers to jam.
-                        pass
-
-            else:
+            if not first_state:
                 for tower in network_state_new.keys():
                     # Nodes that are new to a tower need to trigger msg exchanges, ignore this for first run
                     # as the first run marks all of them as new!
@@ -142,8 +128,7 @@ def main():
             print("Simulating message exchange on all nodes that belong to a network.")
             queue_occupancy[str(current_day) + "," + str(current_hour)] = defaultdict()
             # Remove jammed towers.
-            # This list would be populated based on the simulations config.
-            for tower in jammed_towers:
+            for tower in jam_tower_list:
                 network_state_new.pop(tower, None)
             network_towers = sorted(network_state_new.keys())
             saved_dirty_nodes = dirty_nodes

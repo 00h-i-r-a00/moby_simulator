@@ -15,6 +15,7 @@ COMMS_AGGREGATE_FILE_FORMAT = ".comagg"
 COMMS_USER_FILE_FORMAT = ".comuser"
 message_id_start = DATA_FILE_PREFIX
 overall_network_state = defaultdict(dict)
+tower_population = defaultdict(int)
 def main():
     userpool = defaultdict(int)
     active_userpool_per_hour = {}
@@ -34,7 +35,7 @@ def main():
     parser.add_argument('--messagegenerationtype', help='Original Criteria or Selectively changing sources and destinations', type=int, nargs='?', default=1)
     parser.add_argument('--distributiontype', help='2 types -> "uniform" or "user-activity-based" ; used in conjunction with messagegenerationtype', type=str, nargs='?', default='uniform')
     parser.add_argument('--dos-number', help='Number of dos messages to send at each tower.', type=int, nargs='?', default=0)
-    parser.add_argument('--jam-tower', help='Percentage of towers to jam.', type=int, nargs='?', default=0)
+    parser.add_argument('--jam-tower', help='Number of towers to jam.', type=int, nargs='?', default=0)
     parser.add_argument('--jam-tower-logic', help='The logic used to pick towers to jam.', type=int, nargs='?', default=0)
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
@@ -56,6 +57,7 @@ def main():
     dos_number = args.dos_number
     jam_tower = args.jam_tower
     jam_tower_logic = args.jam_tower_logic
+    jam_tower_list = []
     message_sending_hours = ((end_day - start_day) * 24) - cooldown
     h = 0
     print(message_sending_hours)
@@ -71,6 +73,7 @@ def main():
                     user_ids = user_ids.strip()
                     users_this_hour += user_ids.split("|")
                     overall_network_state[h][tower_id] = len(set(user_ids.split("|")))
+                    tower_population[tower_id] += len(user_ids)
             users_this_hour = set(users_this_hour)
             active_userpool_per_hour[h] = users_this_hour
             h += 1
@@ -101,9 +104,20 @@ def main():
     config["dos-number"] = dos_number
     config["jam-tower"] = jam_tower
     config["jam-tower-logic"] = jam_tower_logic
+    random.seed(seed)
+    if jam_tower > 0:
+        print("Generating jammed towers list.")
+        if jam_tower_logic == 0:
+            print("Logic for jamming: Random. Jamming ", jam_tower," towers.")
+            jam_tower_list = random.sample(tower_population.keys(), jam_tower)
+        elif jam_tower_logic == 1:
+            print("Logic for jamming: Population oracle. Jamming ", jam_tower, " towers.")
+            jam_tower_list = [tower for tower in sorted(tower_population, key=tower_population.get, reverse=True)][:jam_tower]
+    config["jam-tower-list"] = jam_tower_list
     print("Generating messages for config message file", current_message_file)
     distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype, start_day, end_day, city, users_in_pool)
     print(distribution)
+    # Reseeding for message generation to comply with previously run simulations.
     random.seed(seed)
     messages = []
     userpool_keys = sorted(userpool.keys())
