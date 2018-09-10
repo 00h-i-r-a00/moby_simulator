@@ -71,6 +71,9 @@ def main():
     jam_tower = config["jam-tower"]
     jam_tower_logic = config["jam-tower-logic"]
     jam_tower_list = config["jam-tower-list"]
+    jam_user = config["jam-user"]
+    jam_user_logic = config["jam-user-logic"]
+    jam_user_set = set(config["jam-user-list"])
     messages = config["messages"]
     for message in messages:
         message_queue_map[message["hour"]].append(Message(
@@ -103,6 +106,8 @@ def main():
                     user_ids = user_ids.strip()
                     users_this_hour += user_ids.split("|")
                     current_state = set(user_ids.split("|"))
+                    # Removing jammed users from network state.
+                    current_state = current_state - jam_user_set
                     network_state_new[tower_id] = current_state
             print("Users in all towers(double counted):", len(users_this_hour))
             message_hour = current_hour + (24 * (current_day - start_day))

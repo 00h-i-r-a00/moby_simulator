@@ -16,6 +16,7 @@ COMMS_USER_FILE_FORMAT = ".comuser"
 message_id_start = DATA_FILE_PREFIX
 overall_network_state = defaultdict(dict)
 tower_population = defaultdict(int)
+user_mobility = defaultdict(list)
 def main():
     userpool = defaultdict(int)
     active_userpool_per_hour = {}
@@ -37,6 +38,8 @@ def main():
     parser.add_argument('--dos-number', help='Number of dos messages to send at each tower.', type=int, nargs='?', default=0)
     parser.add_argument('--jam-tower', help='Number of towers to jam.', type=int, nargs='?', default=0)
     parser.add_argument('--jam-tower-logic', help='The logic used to pick towers to jam.', type=int, nargs='?', default=0)
+    parser.add_argument('--jam-user', help='Number of users to jam.', type=int, nargs='?', default=0)
+    parser.add_argument('--jam-user-logic', help='The logic used to pick users to jam.', type=int, nargs='?', default=0)
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
     start_day = args.start_day
@@ -58,11 +61,12 @@ def main():
     jam_tower = args.jam_tower
     jam_tower_logic = args.jam_tower_logic
     jam_tower_list = []
+    jam_user = args.jam_user
+    jam_user_logic = args.jam_user_logic
+    jam_user_list = []
     message_sending_hours = ((end_day - start_day) * 24) - cooldown
     h = 0
     print(message_sending_hours)
-    print("Configuration (configuration, start, end, number, city, threshold, sending hours): ", configuration, start_day, end_day, number_of_messages, city, threshold, message_sending_hours)
-
     for current_day in range(start_day, end_day):
         for current_hour in range(0,24):
             current_data_file = DATA_FILE_PREFIX + str(city) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
@@ -73,7 +77,13 @@ def main():
                     user_ids = user_ids.strip()
                     users_this_hour += user_ids.split("|")
                     overall_network_state[h][tower_id] = len(set(user_ids.split("|")))
-                    tower_population[tower_id] += len(user_ids)
+                    # Only need this under that specific scenario.
+                    if jam_tower_logic == 1:
+                        tower_population[tower_id] += len(user_ids)
+                    # Expensive operation, only perform if it's that case.
+                    if jam_user_logic == 2:
+                        for u in users_this_hour:
+                            user_mobility[u].append(tower_id)
             users_this_hour = set(users_this_hour)
             active_userpool_per_hour[h] = users_this_hour
             h += 1
@@ -108,12 +118,30 @@ def main():
     if jam_tower > 0:
         print("Generating jammed towers list.")
         if jam_tower_logic == 0:
-            print("Logic for jamming: Random. Jamming ", jam_tower," towers.")
+            print("Logic for tower jamming: Random. Jamming", jam_tower,"towers.")
             jam_tower_list = random.sample(tower_population.keys(), jam_tower)
         elif jam_tower_logic == 1:
-            print("Logic for jamming: Population oracle. Jamming ", jam_tower, " towers.")
+            print("Logic for tower jamming: Population oracle. Jamming", jam_tower, "towers.")
             jam_tower_list = [tower for tower in sorted(tower_population, key=tower_population.get, reverse=True)][:jam_tower]
     config["jam-tower-list"] = jam_tower_list
+    config["jam-user"] = jam_user
+    config["jam-user-logic"] = jam_user_logic
+    random.seed(seed)
+    if jam_user > 0:
+        print("Generating jammed user set.")
+        if jam_user_logic == 0:
+            print("Logic for user jamming: Random. Jamming", jam_user, "users.")
+            jam_user_list = random.sample(users_in_pool, jam_user)
+        elif jam_tower_logic == 1:
+            print("Logic for user jamming: Popularity oracle. Jamming", jam_user, "users.")
+            # TODO: Parse popularity from comms files.
+        elif jam_tower_logic == 2:
+            print("Logic for user jamming: Mobility oracle. Jamming", jam_user, "users.")
+            for u in user_mobility.keys():
+                user_mobility[u] = len(set(user[u]))
+            jam_user_list = [user for user in sorted(user_mobility, key=user_mobility.get, reverse=True)][:jam_user]
+    config["jam-user-list"] = jam_user_list
+    print("Configuration without messages: ", config)
     print("Generating messages for config message file", current_message_file)
     distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype, start_day, end_day, city, users_in_pool)
     print(distribution)
