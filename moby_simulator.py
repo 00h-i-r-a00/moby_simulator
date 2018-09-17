@@ -35,6 +35,10 @@ class Message:
         self.trust = trust
 
 def main():
+    global dirty_nodes
+    global message_delivery_count
+    global network_state_new
+    global network_state_old
     parser = argparse.ArgumentParser(description='Moby simulation script.')
     parser.add_argument('--configuration', help='Configuration to use for the simulation', type=str, nargs='?', default=0)
     args = parser.parse_args(sys.argv[1:])
@@ -43,11 +47,6 @@ def main():
     first_state = True
     total_messages1 = 0 #cumulative message uptil a particular hour
     total_messages2 = 0 #total messages inside the system
-    global dirty_nodes
-    global message_delivery_count
-    global network_state_new
-    global network_state_old
-    dirty_nodes = []
     configuration_file = CONFIG_FILE_PREFIX + str(configuration) + CONFIG_FILE_FORMAT
     result_file = RESULT_FILE_PREFIX + str(configuration) + RESULT_FILE_FORMAT
     result_file_queue_occupancy = RESULT_FILE_PREFIX + str(configuration) + '_queue_occupancy' + RESULT_FILE_FORMAT
@@ -59,7 +58,7 @@ def main():
     start_day = config["start-day"]
     end_day = config["end-day"]
     seed = config["seed"]
-    queuesize = config["queuesize"]
+    queue_size = config["queuesize"]
     numdays = end_day - start_day
     # adding these two just for the sake of consistency
     percentagehoursactive = config["percentagehoursactive"]
@@ -87,6 +86,7 @@ def main():
     message_delay_file = RESULT_FILE_PREFIX + str(configuration) + '_message_delays.csv'
     for current_day in list(range(start_day, end_day)):
         for current_hour in list(range(0,24)):
+            dirty_nodes = []
             network_state_new = defaultdict(set)
             if threshold == 0:
                 current_data_file = DATA_FILE_PREFIX + str(city_number) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
@@ -135,36 +135,7 @@ def main():
             # Remove jammed towers.
             for tower in jam_tower_list:
                 network_state_new.pop(tower, None)
-            network_towers = sorted(network_state_new.keys())
-            saved_dirty_nodes = dirty_nodes
-            for tower in network_towers:
-                users_in_tower = network_state_new[tower]
-                perform_dos_exchanges(dos_number, tower, users_in_tower, current_day, current_hour)
-                if queuesize == 0:
-                    if perform_message_exchanges(users_in_tower, current_day, current_hour):
-                        dirty_nodes += users_in_tower
-                    else:
-                        pass
-                else:
-                    if perform_message_exchanges_with_queue(users_in_tower, queuesize, current_day, current_hour):
-                        dirty_nodes += users_in_tower
-                    else:
-                        pass
-            dirty_nodes = saved_dirty_nodes
-            network_towers.reverse()
-            for tower in network_towers:
-                users_in_tower = network_state_new[tower]
-                perform_dos_exchanges(dos_number, tower, users_in_tower, current_day, current_hour)
-                if queuesize == 0:
-                    if perform_message_exchanges(users_in_tower, current_day, current_hour):
-                        dirty_nodes += users_in_tower
-                    else:
-                        pass
-                else:
-                    if perform_message_exchanges_with_queue(users_in_tower, queuesize, current_day, current_hour):
-                        dirty_nodes += users_in_tower
-                    else:
-                        pass
+            message_exchange_handler(sorted(network_state_new.keys()), current_day, current_hour, dos_number, queue_size)
             for user, mq in message_queue.items():
                 dellist = []
                 for key, msg in mq.items():
@@ -186,7 +157,6 @@ def main():
                     del message_queue[user][id]
             for key, value in network_state_new.items():
                 network_state_old[key] = value
-            dirty_nodes = []
             total_messages = total_messages1 if deliveryratiotype == 1 else total_messages2
             with open(result_file, "a+") as out_file:
                 out_file.write(getline(current_day, current_hour, len(users_this_hour), len(dirty_nodes), message_delivery_count, total_messages))
@@ -210,20 +180,45 @@ def getline(*args):
     retstr += '\n'
     return retstr
 
-def clean_users(users):
-    global dirty_nodes
-    new_dirty = []
-    for node in dirty_nodes:
-        if node not in users:
-            new_dirty.append(node)
-    dirty_nodes = new_dirty
-
 def perform_dos_exchanges(dos_number, tower, users_in_tower, current_day, current_hour):
     for i in list(range(0, dos_number)):
         id = str(tower) + "_" + str(current_day) + "_" + str(current_hour) + "_" + str(i)
         dos_message = Message(id, 100, -1, -1, -1, 0)
         for u in users_in_tower:
             message_queue[u][dos_message.id] = dos_message
+
+def message_exchange_handler(network_towers, current_day, current_hour, dos_number, queue_size):
+    global dirty_nodes
+    global network_state_new
+    saved_dirty_nodes = dirty_nodes
+    for tower in network_towers:
+        users_in_tower = network_state_new[tower]
+        perform_dos_exchanges(dos_number, tower, users_in_tower, current_day, current_hour)
+        if queue_size == 0:
+            if perform_message_exchanges(users_in_tower, current_day, current_hour):
+                dirty_nodes += users_in_tower
+            else:
+                pass
+        else:
+            if perform_message_exchanges_with_queue(users_in_tower, queue_size, current_day, current_hour):
+                dirty_nodes += users_in_tower
+            else:
+                pass
+    dirty_nodes = saved_dirty_nodes
+    network_towers.reverse()
+    for tower in network_towers:
+        users_in_tower = network_state_new[tower]
+        perform_dos_exchanges(dos_number, tower, users_in_tower, current_day, current_hour)
+        if queue_size == 0:
+            if perform_message_exchanges(users_in_tower, current_day, current_hour):
+                dirty_nodes += users_in_tower
+            else:
+                pass
+        else:
+            if perform_message_exchanges_with_queue(users_in_tower, queue_size, current_day, current_hour):
+                dirty_nodes += users_in_tower
+            else:
+                pass
 
 def perform_message_exchanges(users, current_day, current_hour):
     queue_key = str(current_day) + "," + str(current_hour)
