@@ -117,7 +117,8 @@ def main():
                 total_messages1 += 1
             users_this_hour = set(users_this_hour)
             print("Users seen this hour: ", len(users_this_hour))
-            changes_added = changes_removed = []
+            changes_added = []
+            changes_removed = []
             if not first_state:
                 for tower in network_state_new.keys():
                     # Nodes that are new to a tower need to trigger msg exchanges, ignore this for first run
