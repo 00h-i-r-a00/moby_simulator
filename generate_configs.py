@@ -18,24 +18,20 @@ else:
         os.remove(os.getcwd() + '/data/configs/' + f)
 ####################################################
 
-achtungs = ["achtung02", "achtung03", "achtung04", "achtung05", "achtung06", "achtung07", "achtung10", "achtung11", "achtung12", "achtung13", "achtung14", "achtung15", "achtung16", "achtung17"]
+achtungs = []
+achtungs200 = ["achtung02", "achtung03", "achtung04", "achtung05", "achtung06", "achtung07", "achtung12", "achtung13", "achtung14", "achtung15", "achtung16"]
+achtungs100 = ["achtung10", "achtung11", "achtung17"]
+achtungs50  = ["achtung08", "achtung09"]
+for i in range(0, 3):
+    achtungs.extend(achtungs200)
+for i in range(0, 2):
+    achtungs.extend(achtungs100)
+achtungs.extend(achtungs50)
 achtungpool = itertools.cycle(achtungs)
 
 # Makes keeping track of different runs easier than manually changing this counter.
 #YYYYMMDDHHMMSS
 run_number = dt.now().strftime("%Y%m%d%H%M%S")
-"""
-first day of each week in the year 2009 i.e the days which represent all Mondays in 2009
-
-[4, 11, 18, 25, 32, 39, 46, 53, 60, 67, 74, 81, 88, 95, 102, 109, 116, 123, 130, 137, 144, 151, 158, 165, 172, 179, 186, 193, 200, 207, 214, 221, 228, 235, 242, 249, 256, 263, 270, 277, 284, 291, 298, 305, 312, 319, 326, 333, 340, 347, 354, 361]
-
-"""
-#ttls = [12, 24, 36, 48, 60, 72]
-#ttls needs to be infinite
-#ttls = [72]
-#ttl needs to be infinite which means it needs to be as much as the duration of the simulation
-
-start_days = [4, 11, 18, 25, 32, 39, 46, 53, 60, 67, 74, 81, 88, 95, 102, 109, 116, 123, 130, 137, 144, 151, 158, 165, 172, 179, 186, 193, 200, 207, 214, 221, 228, 235, 242, 249, 256, 263, 270, 277,284, 291, 298, 305, 312, 319, 326, 333, 340, 347, 354, 361]
 start_days = [4, 11, 18, 25, 32]
 number_of_days = [3, 4, 5]
 cities = [0]
