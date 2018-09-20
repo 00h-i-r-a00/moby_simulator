@@ -32,8 +32,8 @@ achtungpool = itertools.cycle(achtungs)
 # Makes keeping track of different runs easier than manually changing this counter.
 #YYYYMMDDHHMMSS
 run_number = dt.now().strftime("%Y%m%d%H%M%S")
-start_days = [4, 11, 18, 25, 32]
-number_of_days = [3, 4, 5]
+start_days = [53]
+number_of_days = [3]
 cities = [0]
 cooldowns = [24]
 number_of_messages = [30000]
@@ -41,7 +41,6 @@ number_of_messages = [30000]
 queuesizes = [0]
 seeds = [244896923]
 messagegenerationtype = [1] #[1,2]
-percentagehoursactive = [50]
 deliveryratiotype = [1] #[1,2]
 distributiontype = ['uniform', 'user_activity_based', 'total_users_based', 'region_sms_based']
 #distributiontype = ['region_sms_based']
@@ -71,36 +70,34 @@ def main():
                         for val_queue in queuesizes:
                             for val_seed in seeds:
                                 for val_msgtype in messagegenerationtype:
-                                    for val_active in percentagehoursactive:
-                                        for val_delratio in deliveryratiotype:
-                                            for val_disttype in distributiontype:
-                                                for val_threshold in thresholds:
-                                                    for val_dosnumber in dos_numbers:
-                                                        for val_jamtower in jamtower:
-                                                            current_achtung = next(achtungpool)
-                                                            config["start-day"] = val_start
-                                                            config["end-day"] = val_start+val_nod
-                                                            config["ttl"] = val_nod * 24
-                                                            config["city-number"] = val_city
-                                                            config["cooldown"] = val_cd
-                                                            config["number"] = val_nm
-                                                            config["queuesize"] = val_queue
-                                                            config["seed"] = val_seed
-                                                            config["messagegenerationtype"] = val_msgtype
-                                                            config["percentagehoursactive"] = val_active
-                                                            config["deliveryratiotype"] = val_delratio
-                                                            config["distributiontype"] = val_disttype
-                                                            config["configuration"] = str(run_number) + "_" + str(config_ctr)
-                                                            config["threshold"] = val_threshold
-                                                            config["dos-number"] = val_dosnumber
-                                                            config["jam-tower"] = val_jamtower[0]
-                                                            config["jam-tower-logic"] = val_jamtower[1]
-                                                            config_ctr += 1
-                                                            achtung_dict[current_achtung].append(config)
-                                                            #keeping track of the parameters used inside configurations to help with graphs
-                                                            with open('data/configs/' + config["configuration"] + '.txt', 'w') as out:
-                                                                json.dump(config, out)
-                                                            config = {}
+                                    for val_delratio in deliveryratiotype:
+                                        for val_disttype in distributiontype:
+                                            for val_threshold in thresholds:
+                                                for val_dosnumber in dos_numbers:
+                                                    for val_jamtower in jamtower:
+                                                        current_achtung = next(achtungpool)
+                                                        config["start-day"] = val_start
+                                                        config["end-day"] = val_start+val_nod
+                                                        config["ttl"] = val_nod * 24
+                                                        config["city-number"] = val_city
+                                                        config["cooldown"] = val_cd
+                                                        config["number"] = val_nm
+                                                        config["queuesize"] = val_queue
+                                                        config["seed"] = val_seed
+                                                        config["messagegenerationtype"] = val_msgtype
+                                                        config["deliveryratiotype"] = val_delratio
+                                                        config["distributiontype"] = val_disttype
+                                                        config["configuration"] = str(run_number) + "_" + str(config_ctr)
+                                                        config["threshold"] = val_threshold
+                                                        config["dos-number"] = val_dosnumber
+                                                        config["jam-tower"] = val_jamtower[0]
+                                                        config["jam-tower-logic"] = val_jamtower[1]
+                                                        config_ctr += 1
+                                                        achtung_dict[current_achtung].append(config)
+                                                        #keeping track of the parameters used inside configurations to help with graphs
+                                                        with open('data/configs/' + config["configuration"] + '.txt', 'w') as out:
+                                                            json.dump(config, out)
+                                                        config = {}
     for current_achtung in achtung_dict.keys():
         with open(current_achtung+".json", 'w') as outfile:
             json.dump(achtung_dict[current_achtung], outfile)

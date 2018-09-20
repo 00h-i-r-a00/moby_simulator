@@ -31,7 +31,6 @@ def main():
     parser.add_argument('--ttl', help='The time to live to be used for the messages', type=int, nargs='?', default=72)
     parser.add_argument('--seed', help='Number to use for random seeding', type=int, nargs='?', default=3007052)
     parser.add_argument('--queuesize', help='0 if no queuesize else a specific number with the queuesize value', type=int, nargs='?', default=0)
-    parser.add_argument('--percentagehoursactive', help='Percentage of hours the destinations stay active', type=int, nargs='?', default=100)
     parser.add_argument('--deliveryratiotype', help='1 if total_messages == upto that hour; 2 if total_messages == total number of messages in all hours', type=int, nargs='?', default=1)
     parser.add_argument('--messagegenerationtype', help='Original Criteria or Selectively changing sources and destinations', type=int, nargs='?', default=1)
     parser.add_argument('--distributiontype', help='2 types -> "uniform" or "user-activity-based" ; used in conjunction with messagegenerationtype', type=str, nargs='?', default='uniform')
@@ -53,7 +52,6 @@ def main():
     time_to_live = args.ttl
     seed = args.seed
     queuesize = args.queuesize
-    percentage_hours_active = args.percentagehoursactive
     message_generation_type = args.messagegenerationtype
     deliveryratiotype = args.deliveryratiotype
     distributiontype = args.distributiontype
@@ -106,7 +104,6 @@ def main():
     config["end-day"] = end_day
     config["seed"] = seed
     config["queuesize"] = queuesize
-    config["percentagehoursactive"] = percentage_hours_active
     config["messagegenerationtype"] = message_generation_type
     config["deliveryratiotype"] = deliveryratiotype
     config["distributiontype"] = distributiontype

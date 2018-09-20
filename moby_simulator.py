@@ -61,7 +61,6 @@ def main():
     queue_size = config["queuesize"]
     numdays = end_day - start_day
     # adding these two just for the sake of consistency
-    percentagehoursactive = config["percentagehoursactive"]
     messagegenerationtype = config["messagegenerationtype"]
     deliveryratiotype = config["deliveryratiotype"] #1 == cumulative sum; #2 == total sum
     distributiontype = config["distributiontype"]
