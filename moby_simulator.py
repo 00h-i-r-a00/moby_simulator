@@ -38,6 +38,7 @@ class Message:
         self.trust = trust
 
 def main():
+    start = time.time()
     global dirty_nodes
     global message_delivery_count
     global network_state_new
@@ -174,11 +175,12 @@ def main():
         for user, msgids in message_delivered.items():
             for msgid in msgids:
                 outfile.write(getline(msgid, message_delays[msgid]))
-    print ("Simulation Done!")
+    time_taken = (time.time() - start) / 60
+    print ("Simulation done in ", time_taken, "mins")
     # Handle slack hook
     if slack_hook != "":
         headers = {"Content-type": "application/json"}
-        payload = {"text": "Simulation " + configuration + " done on " + socket.gethostname() + "!!"}
+        payload = {"text": "Simulation " + configuration + " done on " + socket.gethostname() + "!! Time taken: " + time_taken + " mins."}
         try:
             requests.post(slack_hook, json=payload, headers=headers)
         except requests.exceptions.MissingSchema:
