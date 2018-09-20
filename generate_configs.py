@@ -48,10 +48,10 @@ distributiontype = ['uniform', 'user_activity_based', 'total_users_based', 'regi
 #infinite since we are intially taking an estimate of the possible PDRs
 thresholds = [0, 2, 4, 6, 8, 10, 12]
 max_number = 10 #max number of dos messages to send
-dos_numbers = [number for number in range(1, max_number + 1, 1)]
 dos_numbers = [0]
 # (% towers to jam, jamming logic)
-jamtower = [(0, 0), (10, 0), (10, 1)] # Different jamming scenarios.
+jamtower = [(0, 0)] # Different jamming scenarios.
+slack_hook = ""
 
 def main():
     config = {}
@@ -92,6 +92,7 @@ def main():
                                                         config["dos-number"] = val_dosnumber
                                                         config["jam-tower"] = val_jamtower[0]
                                                         config["jam-tower-logic"] = val_jamtower[1]
+                                                        config["slack-hook"] = slack_hook
                                                         config_ctr += 1
                                                         achtung_dict[current_achtung].append(config)
                                                         #keeping track of the parameters used inside configurations to help with graphs

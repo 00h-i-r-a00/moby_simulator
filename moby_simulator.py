@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 from collections import defaultdict
 import argparse
+import json
+import os
+import pdb
+import requests
+import socket
 import sys
 import time
-import pdb
-import json
 
 DATA_FILE_PREFIX = "data/"
 CONFIG_FILE_PREFIX = "data/seeds/"
@@ -73,6 +76,7 @@ def main():
     jam_user_logic = config["jam-user-logic"]
     jam_user_set = set(config["jam-user-list"])
     messages = config["messages"]
+    slack_hook = config["slack-hook"]
     for message in messages:
         message_queue_map[message["hour"]].append(Message(
                 message["id"],
@@ -171,6 +175,14 @@ def main():
             for msgid in msgids:
                 outfile.write(getline(msgid, message_delays[msgid]))
     print ("Simulation Done!")
+    # Handle slack hook
+    if slack_hook != "":
+        headers = {"Content-type": "application/json"}
+        payload = {"text": "Simulation " + configuration + " done on " + socket.gethostname() + "!!"}
+        try:
+            requests.post(slack_hook, json=payload, headers=headers)
+        except requests.exceptions.MissingSchema:
+            print("Problem with posting to slack. Check hook URL!!")
 
 def getline(*args):
     retstr = str(args[0])

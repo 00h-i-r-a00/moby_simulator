@@ -4,8 +4,10 @@ from collections import defaultdict
 import pdb
 import math
 import numpy as np
-import os
 import json
+import os
+import requests
+import socket
 
 DATA_FILE_PREFIX = "data/"
 SEED_FILE_PREFIX = "data/seeds/"
@@ -40,6 +42,7 @@ def main():
     parser.add_argument('--jam-tower-logic', help='The logic used to pick towers to jam.', type=int, nargs='?', default=0)
     parser.add_argument('--jam-user', help='Number of users to jam.', type=int, nargs='?', default=0)
     parser.add_argument('--jam-user-logic', help='The logic used to pick users to jam.', type=int, nargs='?', default=0)
+    parser.add_argument('--slack-hook', help='Webhook for slack signaling.', type=str, nargs='?', default="")
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
     start_day = args.start_day
@@ -63,6 +66,7 @@ def main():
     jam_user = args.jam_user
     jam_user_logic = args.jam_user_logic
     jam_user_list = []
+    slack_hook = args.slack_hook
     message_sending_hours = ((end_day - start_day) * 24) - cooldown
     h = 0
     print(message_sending_hours)
@@ -113,6 +117,7 @@ def main():
     config["dos-number"] = dos_number
     config["jam-tower"] = jam_tower
     config["jam-tower-logic"] = jam_tower_logic
+    config["slack-hook"] = slack_hook
     random.seed(seed)
     if jam_tower > 0:
         print("Generating jammed towers list.")
@@ -167,6 +172,14 @@ def main():
     with open(current_message_file, "w+") as outfile:
         json.dump(config, outfile)
     print("Message generation complete and written to file:", current_message_file)
+    # Handle slack hook
+    if slack_hook != "":
+        headers = {"Content-type": "application/json"}
+        payload = {"text": "Message generation for " + current_message_file + " done on " + socket.gethostname() + "!!"}
+        try:
+            requests.post(slack_hook, json=payload, headers=headers)
+        except requests.exceptions.MissingSchema:
+            print("Problem with posting to slack. Check hook URL!!")
 
 def get_message_distribution(sending_hours, total_messages, dist_type, start, end, city, users):
     dictionary = {}
