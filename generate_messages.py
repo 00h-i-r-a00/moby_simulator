@@ -16,6 +16,7 @@ COMMS_USER_FILE_FORMAT = ".comuser"
 message_id_start = DATA_FILE_PREFIX
 overall_network_state = defaultdict(dict)
 tower_population = defaultdict(int)
+towers_seen = defaultdict(bool)
 user_mobility = defaultdict(list)
 def main():
     userpool = defaultdict(int)
@@ -76,6 +77,7 @@ def main():
                     users_this_hour += user_ids.split("|")
                     overall_network_state[h][tower_id] = len(set(user_ids.split("|")))
                     # Only need this under that specific scenario.
+                    towers_seen[tower_id] = True
                     if jam_tower_logic == 1:
                         tower_population[tower_id] += len(user_ids)
                     # Expensive operation, only perform if it's that case.
@@ -116,7 +118,7 @@ def main():
         print("Generating jammed towers list.")
         if jam_tower_logic == 0:
             print("Logic for tower jamming: Random. Jamming", jam_tower,"towers.")
-            jam_tower_list = random.sample(tower_population.keys(), jam_tower)
+            jam_tower_list = random.sample(towers_seen.keys(), jam_tower)
         elif jam_tower_logic == 1:
             print("Logic for tower jamming: Population oracle. Jamming", jam_tower, "towers.")
             jam_tower_list = [tower for tower in sorted(tower_population, key=tower_population.get, reverse=True)][:jam_tower]
