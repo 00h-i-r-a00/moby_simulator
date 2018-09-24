@@ -49,8 +49,7 @@ def main():
     configuration = args.configuration
     print("Configuration file: ", configuration)
     first_state = True
-    total_messages1 = 0 #cumulative message uptil a particular hour
-    total_messages2 = 0 #total messages inside the system
+    total_messages = 0
     configuration_file = CONFIG_FILE_PREFIX + str(configuration) + CONFIG_FILE_FORMAT
     result_file = RESULT_FILE_PREFIX + str(configuration) + RESULT_FILE_FORMAT
     result_file_queue_occupancy = RESULT_FILE_PREFIX + str(configuration) + '_queue_occupancy' + RESULT_FILE_FORMAT
@@ -65,8 +64,6 @@ def main():
     queue_size = config["queuesize"]
     numdays = end_day - start_day
     # adding these two just for the sake of consistency
-    messagegenerationtype = config["messagegenerationtype"]
-    deliveryratiotype = config["deliveryratiotype"] #1 == cumulative sum; #2 == total sum
     distributiontype = config["distributiontype"]
     threshold = config["threshold"]
     dos_number = config["dos-number"]
@@ -86,7 +83,6 @@ def main():
                 message["dst"],
                 message["hour"],
                 message["trust"]))
-        total_messages2 += 1
     message_delay_file = RESULT_FILE_PREFIX + str(configuration) + '_message_delays.csv'
     for current_day in list(range(start_day, end_day)):
         for current_hour in list(range(0,24)):
@@ -98,7 +94,6 @@ def main():
                 current_data_file = DATA_FILE_PREFIX + str(city_number) + "_" + str(threshold) + "/" + str(start_day) + "/" + str(numdays) + "/" + str(current_day) + "_" +              str(current_hour) + DATA_FILE_FORMAT
             users_this_hour = []
             if not first_state:
-                total_messages = total_messages1 if deliveryratiotype == 1 else total_messages2
                 print("Message Delivery count: ", message_delivery_count, " of: ", total_messages)
                 print("Delivery rate: ", (float(message_delivery_count) / total_messages)*100, "%")
             print("Processing hour: ", current_hour, " File: ", current_data_file)
@@ -118,7 +113,7 @@ def main():
             for msg in message_queue_map[message_hour]:
                 message_queue[msg.src][msg.id] = msg
                 dirty_nodes.append(msg.src)
-                total_messages1 += 1
+                total_messages += 1
             users_this_hour = set(users_this_hour)
             print("Users seen this hour: ", len(users_this_hour))
             changes_added = []
@@ -162,7 +157,6 @@ def main():
                     del message_queue[user][id]
             for key, value in network_state_new.items():
                 network_state_old[key] = value
-            total_messages = total_messages1 if deliveryratiotype == 1 else total_messages2
             with open(result_file, "a+") as out_file:
                 out_file.write(getline(current_day, current_hour, len(users_this_hour), len(dirty_nodes), message_delivery_count, total_messages))
     with open(result_file_queue_occupancy, "w") as outfile:

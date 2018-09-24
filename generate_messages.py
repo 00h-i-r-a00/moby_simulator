@@ -34,9 +34,7 @@ def main():
     parser.add_argument('--ttl', help='The time to live to be used for the messages', type=int, nargs='?', default=72)
     parser.add_argument('--seed', help='Number to use for random seeding', type=int, nargs='?', default=3007052)
     parser.add_argument('--queuesize', help='0 if no queuesize else a specific number with the queuesize value', type=int, nargs='?', default=0)
-    parser.add_argument('--deliveryratiotype', help='1 if total_messages == upto that hour; 2 if total_messages == total number of messages in all hours', type=int, nargs='?', default=1)
-    parser.add_argument('--messagegenerationtype', help='Original Criteria or Selectively changing sources and destinations', type=int, nargs='?', default=1)
-    parser.add_argument('--distributiontype', help='2 types -> "uniform" or "user-activity-based" ; used in conjunction with messagegenerationtype', type=str, nargs='?', default='uniform')
+    parser.add_argument('--distributiontype', help='Logic used to pick distribution of messages', type=str, nargs='?', default='uniform')
     parser.add_argument('--dos-number', help='Number of dos messages to send at each tower.', type=int, nargs='?', default=0)
     parser.add_argument('--jam-tower', help='Number of towers to jam.', type=int, nargs='?', default=0)
     parser.add_argument('--jam-tower-logic', help='The logic used to pick towers to jam.', type=int, nargs='?', default=0)
@@ -56,8 +54,6 @@ def main():
     time_to_live = args.ttl
     seed = args.seed
     queuesize = args.queuesize
-    message_generation_type = args.messagegenerationtype
-    deliveryratiotype = args.deliveryratiotype
     distributiontype = args.distributiontype
     dos_number = args.dos_number
     jam_tower = args.jam_tower
@@ -110,8 +106,6 @@ def main():
     config["end-day"] = end_day
     config["seed"] = seed
     config["queuesize"] = queuesize
-    config["messagegenerationtype"] = message_generation_type
-    config["deliveryratiotype"] = deliveryratiotype
     config["distributiontype"] = distributiontype
     config["threshold"] = threshold
     config["dos-number"] = dos_number
