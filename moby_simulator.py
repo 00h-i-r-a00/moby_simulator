@@ -174,7 +174,7 @@ def main():
     # Handle slack hook
     if slack_hook != "":
         headers = {"Content-type": "application/json"}
-        payload = {"text": "Simulation " + configuration + " done on " + socket.gethostname() + "!! Time taken: " + time_taken + " mins."}
+        payload = {"text": "Simulation " + configuration + " done on " + socket.gethostname() + "!! Time taken: " + str(time_taken) + " mins."}
         try:
             requests.post(slack_hook, json=payload, headers=headers)
         except requests.exceptions.MissingSchema:
