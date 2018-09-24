@@ -4,7 +4,5 @@ for server in achtung02 achtung03 achtung04 achtung05 achtung06 achtung07 achtun
     pkill -f monitor_moby_simulator.sh
     cd moby_simulator
     nohup ./run_simulations.py > data/logs/$server.nohup &
-    nohup ./monitor_moby_simulator.sh > data/memory_logs/$server.csv &
-    nohup ./kill_processes_above_threshold.sh > data/memory_logs/$server.csv &
 EOF
 done
