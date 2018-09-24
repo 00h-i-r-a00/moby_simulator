@@ -41,6 +41,7 @@ number_of_messages = [30000]
 queuesizes = [0]
 seeds = [244896923]
 distributiontype = ['uniform', 'user_activity_based', 'total_users_based', 'region_sms_based']
+ttls = [73]
 #distributiontype = ['region_sms_based']
 thresholds = [0, 2, 4, 6, 8, 10, 12]
 #infinite since we are intially taking an estimate of the possible PDRs
