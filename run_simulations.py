@@ -34,12 +34,13 @@ def main():
             print("Killswitch encountered!!")
             subprocess.check_output("killall python3 -u " + me, shell=True)
             return
-        number_of_moby_processes_cmd = 'ps aux | grep `whoami` | grep moby_simulator.py'
-        running_moby_processes = len(subprocess.check_output(number_of_moby_processes_cmd, shell=True).split()) - 1 # Discount grep process.
-        number_of_generate_messages_cmd = 'ps aux | grep `whoami` | grep generate_messages.py'
-        running_moby_processes += len(subprocess.check_output(number_of_generate_messages_cmd, shell=True).split()) - 1 # Discount grep process.
+        number_of_moby_processes_cmd = 'ps aux | grep `whoami` | grep moby_simulator.py | wc -l'
+        running_moby_processes = int(subprocess.check_output(number_of_moby_processes_cmd, shell=True)) - 1 # Discount grep process.
+        number_of_generate_messages_cmd = 'ps aux | grep `whoami` | grep generate_messages.py | wc -l'
+        running_moby_processes += int(subprocess.check_output(number_of_generate_messages_cmd, shell=True)) - 1 # Discount grep process.
         TOTAL_CONCURRENT_PROCESSES = get_total_concurrent_processes()
         processes_to_schedule = max(TOTAL_CONCURRENT_PROCESSES - running_moby_processes, 0)
+        print("Running moby", running_moby_processes, "To schedule", processes_to_schedule)
         new_pointer = conf_pointer + processes_to_schedule
         if new_pointer > len(confs):
             new_pointer = len(confs)
