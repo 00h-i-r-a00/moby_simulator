@@ -45,7 +45,7 @@ def main():
         plt.show()
     if not os.path.exists(REPORT_DIR):
         os.makedirs(REPORT_DIR)
-    plt.savefig(REPORT_DIR + run_number.split("_")[-1] + ".png")
+    plt.savefig(REPORT_DIR + run_number.split("_")[-1] + ".eps", format="eps", dpi=1200)
 
 if __name__ == "__main__":
     main()

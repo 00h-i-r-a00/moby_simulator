@@ -45,7 +45,7 @@ def main():
     REPORT_DIR = REPORTS_PREFIX + str(run_number) + "/"
     if not os.path.exists(REPORT_DIR):
         os.makedirs(REPORT_DIR)
-    plt.savefig(REPORT_DIR + "message_deliveries.png")
+    plt.savefig(REPORT_DIR + "delivery_ratios.eps", format="eps", dpi=1200)
     if not quiet:
         plt.show()
     plt.gcf().clear()
