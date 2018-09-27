@@ -33,9 +33,9 @@ def main():
             delivered = last[-2]
             total = last[-1]
             ratios.append(float(delivered) / float(total))
-    plt.figure(1)
+    plt.figure(figsize=(16,9))
     plt.style.use('ggplot')
-    plt.title('Results seen for run number ' + str(run_number))
+    plt.title('Results seen for run number ' + str(run_number) + ' Configurations: ' + str(len(filtered_files)))
     plt.xlabel('Configuration ID')
     plt.ylabel('Delivery Ratio at the end of the simulation')
     xaxis = [i for i in range(0, len(config_ids))]
