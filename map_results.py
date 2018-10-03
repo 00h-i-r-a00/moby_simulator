@@ -2,7 +2,9 @@
 import argparse
 import matplotlib.pyplot as plt
 import os
+import statistics
 import sys
+import time
 
 RESULTS_PREFIX = 'data/results/'
 REPORTS_PREFIX = 'data/reports/'
@@ -12,45 +14,72 @@ QUEUE_OCCUPANCY_EXT = '_queue_occupancy.csv'
 
 def main():
     parser = argparse.ArgumentParser(description='Moby results visualizer.')
-    parser.add_argument('--run-number', help='Run number to be plotted.', type=int, nargs='?', default=0)
+    parser.add_argument('--run-numbers', help='Run number to be plotted.', type=int, nargs='+', default=0)
     parser.add_argument('--quiet', help='Wether to call show or not.', type=bool, nargs='?', default=False)
+    parser.add_argument('-p', '--parallelize', help='Whether to parallelize message delay graph generation or not.', type=bool, nargs='?', default=False)
     args = parser.parse_args(sys.argv[1:])
-    run_number = args.run_number
+    run_numbers = args.run_numbers
     quiet = args.quiet
+    parallelize = args.parallelize
+    data_files = {}
+    config_ids = {}
     files = os.listdir(RESULTS_PREFIX)
-    filtered_files = []
-    for f in files:
-        if f.startswith(str(run_number)) and f.endswith(RESULT_EXT) and (not f.endswith(MESSAGE_DELAYS_EXT)) and (not f.endswith(QUEUE_OCCUPANCY_EXT)):
-            filtered_files.append(f.strip(RESULT_EXT))
-    filtered_files.sort(key=lambda x: int(x.split('_')[-1].strip(RESULT_EXT)))
-    config_ids = [i.split('_')[-1].strip(RESULT_EXT) for i in filtered_files]
-    print("Plotting results for:", filtered_files)
-    ratios = []
-    for f in filtered_files:
-        with open(RESULTS_PREFIX + f + RESULT_EXT, 'r') as infile:
-            last = infile.readlines()[-1]
-            last = last.split(',')
-            delivered = last[-2]
-            total = last[-1]
-            ratios.append(float(delivered) / float(total))
+    for rn in run_numbers:
+        data_files[rn] = []
+        for f in files:
+            if f.startswith(str(rn)) and f.endswith(RESULT_EXT) and (not f.endswith(MESSAGE_DELAYS_EXT)) and (not f.endswith(QUEUE_OCCUPANCY_EXT)):
+                data_files[rn].append(f.strip(RESULT_EXT))
+        data_files[rn].sort(key=lambda x: int(x.split('_')[-1].strip(RESULT_EXT)))
+        config_ids[rn] = [int(i.split('_')[-1].strip(RESULT_EXT)) for i in data_files[rn]]
+    dk = list(data_files.keys())
+    # Check if all run number have the same number of simulations
+    assert all(config_ids[x] == config_ids[dk[0]] for x in dk)
+    ratios = {}
+    for rn in dk:
+        ratios[rn] = []
+        filtered_files = data_files[rn]
+        for f in filtered_files:
+            with open(RESULTS_PREFIX + f + RESULT_EXT, 'r') as infile:
+                last = infile.readlines()[-1]
+                last = last.split(',')
+                delivered = last[-2]
+                total = last[-1]
+                ratios[rn].append(float(delivered) / float(total))
+    means = []
+    deviations = []
+    for i in config_ids[dk[0]]:
+        vals = [ratios[j][i] for j in dk]
+        means.append(statistics.mean(vals))
+        deviations.append(statistics.stdev(vals))
+    print(means, deviations)
+    print("Plotting results for:", run_numbers)
     plt.figure(figsize=(16,9))
     plt.style.use('ggplot')
-    plt.title('Results seen for run number ' + str(run_number) + ' Configurations: ' + str(len(filtered_files)))
+    plt.title('Results seen for run number ' + str(run_numbers) + ' Configurations: ' + str(len(filtered_files)))
     plt.xlabel('Configuration ID')
     plt.ylabel('Delivery Ratio at the end of the simulation')
-    xaxis = [i for i in range(0, len(config_ids))]
-    plt.plot(xaxis, ratios, marker='o')
+    xaxis = [i for i in range(0, len(config_ids[dk[0]]))]
+    plt.errorbar(xaxis, means, yerr=deviations, fmt='o', ecolor='b', capsize=5)
     plt.xticks(rotation=45)
-    plt.xticks(xaxis, config_ids)
-    REPORT_DIR = REPORTS_PREFIX + str(run_number) + "/"
+    plt.xticks(xaxis, config_ids[dk[0]])
+    report_id = str(run_numbers[0])
+    for rn in run_numbers[1:]:
+        report_id += "_" + str(rn)
+    REPORT_DIR = REPORTS_PREFIX + report_id + "/"
     if not os.path.exists(REPORT_DIR):
         os.makedirs(REPORT_DIR)
     plt.savefig(REPORT_DIR + "delivery_ratios.eps", format="eps", dpi=1200)
     if not quiet:
         plt.show()
     plt.gcf().clear()
-    for f in filtered_files:
-        os.system("./plot_message_delays.py --quiet True --run-number " + f)
+    for rn in run_numbers:
+        print("Launching plot message delays for", rn)
+        for f in data_files[rn]:
+            if(parallelize):
+                os.system("./plot_message_delays.py --quiet True --run-number " + f + " &")
+            else:
+                os.system("./plot_message_delays.py --quiet True --run-number " + f)
+        time.sleep(10)
 
 if __name__ == "__main__":
     main()
