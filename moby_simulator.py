@@ -24,7 +24,7 @@ message_delivered = defaultdict(list)
 queue_occupancy = defaultdict(dict)
 message_delays = defaultdict(int)
 message_delivery_count = 0
-dirty_nodes = []
+dirty_nodes = set()
 total_message_exchanges = 0
 total_time = 0
 
@@ -86,7 +86,7 @@ def main():
     message_delay_file = RESULT_FILE_PREFIX + str(configuration) + '_message_delays.csv'
     for current_day in list(range(start_day, end_day)):
         for current_hour in list(range(0,24)):
-            dirty_nodes = []
+            dirty_nodes = set()
             network_state_new = defaultdict(set)
             if threshold == 0:
                 current_data_file = DATA_FILE_PREFIX + str(city_number) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
@@ -112,7 +112,7 @@ def main():
             message_hour = current_hour + (24 * (current_day - start_day))
             for msg in message_queue_map[message_hour]:
                 message_queue[msg.src][msg.id] = msg
-                dirty_nodes.append(msg.src)
+                dirty_nodes.add(msg.src)
                 total_messages += 1
             users_this_hour = set(users_this_hour)
             print("Users seen this hour: ", len(users_this_hour))
@@ -126,7 +126,7 @@ def main():
                     transitions_removed = network_state_old[tower].difference(network_state_new[tower])
                     changes_added += transitions_added
                     changes_removed += transitions_removed
-                    dirty_nodes += transitions_added
+                    dirty_nodes.update(set(transitions_added))
             print("Network changes added: ", len(changes_added), " removed: ", len(changes_removed))
             print("Total dirty nodes: ", len(dirty_nodes))
             first_state = False
@@ -204,12 +204,12 @@ def message_exchange_handler(network_towers, current_day, current_hour, dos_numb
         perform_dos_exchanges(dos_number, tower, users_in_tower, current_day, current_hour)
         if queue_size == 0:
             if perform_message_exchanges(users_in_tower, current_day, current_hour):
-                dirty_nodes += users_in_tower
+                dirty_nodes.update(set(users_in_tower))
             else:
                 pass
         else:
             if perform_message_exchanges_with_queue(users_in_tower, queue_size, current_day, current_hour):
-                dirty_nodes += users_in_tower
+                dirty_nodes.update(set(users_in_tower))
             else:
                 pass
     dirty_nodes = saved_dirty_nodes
@@ -219,12 +219,12 @@ def message_exchange_handler(network_towers, current_day, current_hour, dos_numb
         perform_dos_exchanges(dos_number, tower, users_in_tower, current_day, current_hour)
         if queue_size == 0:
             if perform_message_exchanges(users_in_tower, current_day, current_hour):
-                dirty_nodes += users_in_tower
+                dirty_nodes.update(set(users_in_tower))
             else:
                 pass
         else:
             if perform_message_exchanges_with_queue(users_in_tower, queue_size, current_day, current_hour):
-                dirty_nodes += users_in_tower
+                dirty_nodes.update(set(users_in_tower))
             else:
                 pass
 
