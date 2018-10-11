@@ -79,7 +79,8 @@ def main():
                                                     config["ttl"] = val_nod * 24
                                                     config["city-number"] = val_city
                                                     config["cooldown"] = val_cd
-                                                    config["number"] = val_nm
+                                                    # Scale number of days according to simulation length
+                                                    config["number"] = int(val_nm * (1 + ((val_nod - number_of_days[0])*0.5)))
                                                     config["queuesize"] = val_queue
                                                     config["seed"] = val_seed
                                                     config["distributiontype"] = val_disttype
