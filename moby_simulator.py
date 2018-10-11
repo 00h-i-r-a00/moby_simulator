@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from collections import defaultdict
 import argparse
+from bitarray import bitarray
 import json
 import os
 import pdb
@@ -8,6 +9,7 @@ import requests
 import socket
 import sys
 import time
+import tracemalloc
 
 DATA_FILE_PREFIX = "data/"
 CONFIG_FILE_PREFIX = "data/seeds/"
@@ -16,33 +18,32 @@ DATA_FILE_FORMAT = ".twr"
 CONFIG_FILE_FORMAT = ".config"
 RESULT_FILE_FORMAT = ".csv"
 
-network_state_old = defaultdict(set)
-network_state_new = defaultdict(set)
-message_queue = defaultdict(dict)
-message_queue_map = defaultdict(list)
-message_delivered = defaultdict(list)
-queue_occupancy = defaultdict(dict)
-message_delays = defaultdict(int)
-message_delivery_count = 0
-dirty_nodes = set()
-total_message_exchanges = 0
-total_time = 0
-
 class Message:
-    def __init__(self, id, ttl, src, dst, hop, trust):
+    def __init__(self, id, ttl, src, dst, hour, trust):
         self.id  = id
         self.ttl = ttl
         self.src = src
         self.dst = dst
-        self.hop = hop
+        self.hour = hour
         self.trust = trust
+
+network_state_old = defaultdict(set)
+network_state_new = defaultdict(set)
+message_queue = {}
+message_pool = []
+queue_occupancy = defaultdict(dict)
+dirty_nodes = set()
+total_message_exchanges = 0
+total_time = 0
 
 def main():
     start = time.time()
     global dirty_nodes
-    global message_delivery_count
     global network_state_new
     global network_state_old
+    global queue_occupancy
+    global message_pool
+    message_delays = defaultdict(int)
     parser = argparse.ArgumentParser(description='Moby simulation script.')
     parser.add_argument('--configuration', help='Configuration to use for the simulation', type=str, nargs='?', default=0)
     args = parser.parse_args(sys.argv[1:])
@@ -75,17 +76,30 @@ def main():
     jam_user_set = set(config["jam-user-list"])
     messages = config["messages"]
     slack_hook = config["slack-hook"]
+    message_pool = [None] * len(messages)
+    userpool = config["userpool"]
+    for u in userpool:
+        message_queue[u] = bitarray(len(messages))
+        message_queue[u].setall(0)
+    message_delivered = bitarray(len(messages))
+    message_delivered.setall(0)
     for message in messages:
-        message_queue_map[message["hour"]].append(Message(
-                message["id"],
-                message["ttl"],
+        m = Message(int(message["id"]),
+                int(message["ttl"]),
                 message["src"],
                 message["dst"],
-                message["hour"],
-                message["trust"]))
+                int(message["hour"]),
+                float(message["trust"]))
+        message_pool[m.id] = m
     message_delay_file = RESULT_FILE_PREFIX + str(configuration) + '_message_delays.csv'
     for current_day in list(range(start_day, end_day)):
         for current_hour in list(range(0,24)):
+            tracemalloc.start()
+            snapshot = tracemalloc.take_snapshot()
+            top_stats = snapshot.statistics('lineno')
+            print("TRACEMALLOC: ")
+            for stat in top_stats[:10]:
+                print(stat)
             dirty_nodes = set()
             network_state_new = defaultdict(set)
             if threshold == 0:
@@ -94,8 +108,8 @@ def main():
                 current_data_file = DATA_FILE_PREFIX + str(city_number) + "_" + str(threshold) + "/" + str(start_day) + "/" + str(numdays) + "/" + str(current_day) + "_" +              str(current_hour) + DATA_FILE_FORMAT
             users_this_hour = []
             if not first_state:
-                print("Message Delivery count: ", message_delivery_count, " of: ", total_messages)
-                print("Delivery rate: ", (float(message_delivery_count) / total_messages)*100, "%")
+                print("Message Delivery count: ", message_delivered.count(), " of: ", total_messages)
+                print("Delivery rate: ", (float(message_delivered.count()) / total_messages)*100, "%")
             print("Processing hour: ", current_hour, " File: ", current_data_file)
             with open(current_data_file) as data:
                 for entry in data:
@@ -109,12 +123,13 @@ def main():
                     current_state = current_state - jam_user_set
                     network_state_new[tower_id] = current_state
             print("Users in all towers(double counted):", len(users_this_hour))
-            message_hour = current_hour + (24 * (current_day - start_day))
-            for msg in message_queue_map[message_hour]:
-                message_queue[msg.src][msg.id] = msg
-                dirty_nodes.add(msg.src)
-                total_messages += 1
             users_this_hour = set(users_this_hour)
+            message_hour = current_hour + (24 * (current_day - start_day))
+            for msg in message_pool:
+                if msg.hour == message_hour:
+                    message_queue[msg.src][msg.id] = 1
+                    dirty_nodes.add(msg.src)
+                    total_messages += 1
             print("Users seen this hour: ", len(users_this_hour))
             changes_added = []
             changes_removed = []
@@ -136,29 +151,20 @@ def main():
             for tower in jam_tower_list:
                 network_state_new.pop(tower, None)
             message_exchange_handler(sorted(network_state_new.keys()), current_day, current_hour, dos_number, queue_size)
-            for user, mq in message_queue.items():
-                dellist = []
-                for key, msg in mq.items():
-                    # print "Dst: ", msg.dst, "User:", user
-                    if msg.id not in message_delivered[user]:
-                        if msg.dst == user and msg.id:
-                            message_delivery_count += 1
-                            message_delivered[user].append(msg.id)
-                            if msg.id not in message_delays:
-                                hour_of_simulation = ((current_day - start_day)*24) + current_hour
-                                message_delays[msg.id] = int(hour_of_simulation - int(msg.hop))
-                                print("Message delay: ", message_delays[msg.id])
-                            msg.ttl = 60
-                        elif msg.ttl > 1:
-                            msg.ttl -= 1
-                        else:
-                            dellist.append(msg.id)
-                for id in dellist:
-                    del message_queue[user][id]
+            print("Done with msg exchange, destination checks.")
+            for msgid in range(len(message_pool)):
+                m = message_pool[msgid]
+                if not message_delivered[msgid]:
+                    mq = message_queue[m.dst]
+                    if mq[msgid]:
+                        message_delivered[msgid] = 1
+                        hour_of_simulation = ((current_day - start_day)*24) + current_hour
+                        message_delays[msgid] = hour_of_simulation - m.hour
+                        print("Message delay, ID: ", message_delays[msgid], msgid)
             for key, value in network_state_new.items():
                 network_state_old[key] = value
             with open(result_file, "a+") as out_file:
-                out_file.write(getline(current_day, current_hour, len(users_this_hour), len(dirty_nodes), message_delivery_count, total_messages))
+                out_file.write(getline(current_day, current_hour, len(users_this_hour), len(dirty_nodes), message_delivered.count(), total_messages))
     with open(result_file_queue_occupancy, "w") as outfile:
         for day in list(range(start_day, end_day)):
             for hour in list(range(0,24)):
@@ -238,12 +244,12 @@ def perform_message_exchanges(users, current_day, current_hour):
         for u2 in users:
             if u1 == u2:
                 continue
-            mq1 = message_queue[u1]
-            mq2 = message_queue[u2]
-            mq1.update(mq2)
-            mq2.update(mq1)
-            queue_occupancy[queue_key][u1] = len(mq1.keys())
-            queue_occupancy[queue_key][u2] = len(mq2.keys())
+            b1 = message_queue[u1]
+            b2 = message_queue[u2]
+            message_queue[u1] |= b2
+            message_queue[u2] |= b1
+            queue_occupancy[queue_key][u1] = message_queue[u1].count()
+            queue_occupancy[queue_key][u2] = message_queue[u2].count()
     return True
 
 def perform_message_exchanges_with_queue(users, queuesize, current_day, current_hour):
