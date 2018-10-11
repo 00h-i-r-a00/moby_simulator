@@ -20,27 +20,28 @@ else:
 
 achtungs = []
 achtungs200 = ["achtung02", "achtung03", "achtung04", "achtung05", "achtung06", "achtung07", "achtung12", "achtung13", "achtung14", "achtung15", "achtung16"]
-achtungs100 = ["achtung10", "achtung11", "achtung17"]
-achtungs50  = ["achtung08", "achtung09"]
+achtungs100 = ["achtung10", "achtung11"]
+# "achtung17"]
+# achtungs50  = ["achtung08", "achtung09"]
 for i in range(0, 3):
     achtungs.extend(achtungs200)
 for i in range(0, 2):
     achtungs.extend(achtungs100)
-achtungs.extend(achtungs50)
+# achtungs.extend(achtungs50)
 achtungpool = itertools.cycle(achtungs)
 
 # Makes keeping track of different runs easier than manually changing this counter.
 #YYYYMMDDHHMMSS
 run_number = dt.now().strftime("%Y%m%d%H%M%S")
 start_days = [53]
-number_of_days = [3]
+number_of_days = [3, 4, 5]
 cities = [0]
 cooldowns = [24]
 number_of_messages = [30000]
 #queuesizes = [queuesize for queuesize in xrange(0,max_queue_size + 1,10)]
 queuesizes = [0]
-seeds = [244896923]
-distributiontype = ['uniform', 'user_activity_based', 'total_users_based', 'region_sms_based']
+seeds = [373523167]
+distributiontype = ['region_sms_based']
 ttls = [73]
 #distributiontype = ['region_sms_based']
 thresholds = [0, 2, 4, 6, 8, 10, 12]
@@ -60,14 +61,14 @@ def main():
         if os.path.isfile(os.getcwd() + '/' + f + '.json'):
             os.remove(f+".json")
 
-    for val_ttl in ttls:
-        for val_start in start_days:
-            for val_nod in number_of_days:
-                for val_city in cities:
-                    for val_cd in cooldowns:
-                        for val_nm in number_of_messages:
-                            for val_queue in queuesizes:
-                                for val_seed in seeds:
+    for val_seed in seeds:
+        for val_ttl in ttls:
+            for val_start in start_days:
+                for val_nod in number_of_days:
+                    for val_city in cities:
+                        for val_cd in cooldowns:
+                            for val_nm in number_of_messages:
+                                for val_queue in queuesizes:
                                     for val_disttype in distributiontype:
                                         for val_threshold in thresholds:
                                             for val_dosnumber in dos_numbers:
