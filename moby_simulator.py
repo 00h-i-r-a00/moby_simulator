@@ -172,9 +172,8 @@ def main():
                 for user, queueocc in queue_occupancy[key].items():
                     outfile.write(getline(key, user, queueocc))
     with open(message_delay_file, "w") as outfile:
-        for user, msgids in message_delivered.items():
-            for msgid in msgids:
-                outfile.write(getline(msgid, message_delays[msgid]))
+        for msgid, delay in message_delays.items():
+            outfile.write(getline(msgid, delay))
     time_taken = (time.time() - start) / 60
     print ("Simulation done in ", time_taken, "mins")
     # Handle slack hook
