@@ -99,8 +99,7 @@ def main():
     config = {}
     config["alluserslen"] = len(allusers)
     config["userpoollen"] = len(userpool)
-    # Dropping writing user pool, not really used, only there for possible need to debug.
-    # config["userpool"] = users_in_pool
+    config["userpool"] = users_in_pool
     config["city"] = city
     config["start-day"] = start_day
     config["end-day"] = end_day
