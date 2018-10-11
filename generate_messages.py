@@ -145,6 +145,7 @@ def main():
     print(distribution)
     # Reseeding for message generation to comply with previously run simulations.
     random.seed(seed)
+    id_counter = 0
     messages = []
     userpool_keys = sorted(userpool.keys())
     for hour in range(message_sending_hours):
@@ -152,7 +153,7 @@ def main():
         for i in range(int(math.ceil(message_number))):
             message = {}
             message["hour"] = hour
-            message["id"] = DATA_FILE_PREFIX + str(hour) + "_" + str(i)
+            message["id"] = id_counter
             # Don't use the message_generation_type flag for now, maybe need it in the future.
             # if message_generation_type == 1:
             src, dst = random.sample(userpool_keys, 2)
@@ -162,6 +163,7 @@ def main():
             message["hop"] = 0
             message["trust"] = 1
             messages.append(message)
+            id_counter += 1
     config["messages"] = messages
     with open(current_message_file, "w+") as outfile:
         json.dump(config, outfile)
