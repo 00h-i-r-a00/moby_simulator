@@ -15,7 +15,7 @@ def get_total_concurrent_processes():
     total_mem = float(subprocess.check_output("vmstat -n -s | grep 'total memory' | awk '{print $1}'", shell=True))
     used_mem = subprocess.check_output("vmstat -n -s | grep 'used memory' | awk '{print $1}'", shell=True)
     free_mem = int(total_mem) - int(used_mem)
-    avg_mem_consumption_per_process = 20 * 1024 * 1024
+    avg_mem_consumption_per_process = 2 * 1024 * 1024
     total_concurrent_processes = int(math.floor(free_mem/avg_mem_consumption_per_process))
     max_total_concurrent_processes = int(math.floor(total_mem/(avg_mem_consumption_per_process * 2)))
     return min(total_concurrent_processes, max_total_concurrent_processes)
