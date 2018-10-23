@@ -23,6 +23,7 @@ user_mobility = defaultdict(list)
 def main():
     userpool = defaultdict(int)
     active_userpool_per_hour = {}
+    del_users = {}
     parser = argparse.ArgumentParser(description='Moby message generation script script.')
     parser.add_argument('--number', help='Number of messages to generate', type=int, nargs='?', default=1000)
     parser.add_argument('--start-day', help='start day of the year', type=int, nargs='?', default=0)
@@ -89,8 +90,10 @@ def main():
             h += 1
             for u in users_this_hour:
                 userpool[u] += 1
+    print("Active userpool per hour len", len(active_userpool_per_hour))
     print("Total users seen: ", len(userpool))
     allusers = dict(userpool)
+    unfiltered_users = set(allusers.keys())
     #faster method to delete
     userpool = dict((k, v) for (k, v) in userpool.items() if v >= threshold)
     print("Users above threshold: ", len(userpool), " percentage: ", (float(len(userpool))/float(len(allusers)) * 100), "%")
@@ -99,7 +102,7 @@ def main():
     config = {}
     config["alluserslen"] = len(allusers)
     config["userpoollen"] = len(userpool)
-    config["userpool"] = users_in_pool
+    config["userpool"] = list(unfiltered_users)
     config["city"] = city
     config["start-day"] = start_day
     config["end-day"] = end_day
@@ -138,7 +141,6 @@ def main():
                 user_mobility[u] = len(set(user[u]))
             jam_user_list = [user for user in sorted(user_mobility, key=user_mobility.get, reverse=True)][:jam_user]
     config["jam-user-list"] = jam_user_list
-    print("Configuration without messages: ", config)
     print("Generating messages for config message file", current_message_file)
     distribution = get_message_distribution(message_sending_hours, number_of_messages, distributiontype, start_day, end_day, city, users_in_pool)
     print(distribution)
@@ -149,13 +151,20 @@ def main():
     userpool_keys = sorted(userpool.keys())
     for hour in range(message_sending_hours):
         message_number = distribution[hour]
+        users_to_consider = []
+        for i in range(hour, len(active_userpool_per_hour)):
+            users_to_consider.extend(active_userpool_per_hour[i])
+        users_to_consider = set(users_to_consider)
+        if hour > 0:
+            del_users[hour - 1] = list(unfiltered_users - users_to_consider)
+            print("Filtered users:", len(del_users[hour - 1]))
         for i in range(int(math.ceil(message_number))):
             message = {}
             message["hour"] = hour
             message["id"] = id_counter
             # Don't use the message_generation_type flag for now, maybe need it in the future.
             # if message_generation_type == 1:
-            src, dst = random.sample(userpool_keys, 2)
+            src, dst = random.sample(users_to_consider.intersection(userpool_keys), 2)
             message["src"] = src
             message["dst"] = dst
             message["ttl"] = 72
@@ -164,6 +173,9 @@ def main():
             messages.append(message)
             id_counter += 1
     config["messages"] = messages
+    config["del-users"] = del_users
+    for k, v in del_users.items():
+        print("Del users:", len(v))
     with open(current_message_file, "w+") as outfile:
         json.dump(config, outfile)
     print("Message generation complete and written to file:", current_message_file)
