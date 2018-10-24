@@ -64,7 +64,8 @@ def main():
     jam_user_logic = args.jam_user_logic
     jam_user_list = []
     slack_hook = args.slack_hook
-    message_sending_hours = ((end_day - start_day) * 24) - cooldown
+    total_hours = (end_day - start_day) * 24
+    message_sending_hours = total_hours - cooldown
     h = 0
     print(message_sending_hours)
     for current_day in range(start_day, end_day):
@@ -152,7 +153,7 @@ def main():
     for hour in range(message_sending_hours):
         message_number = distribution[hour]
         users_to_consider = []
-        for i in range(hour, len(active_userpool_per_hour)):
+        for i in range(hour, total_hours):
             users_to_consider.extend(active_userpool_per_hour[i])
         users_to_consider = set(users_to_consider)
         if hour > 0:
@@ -172,6 +173,14 @@ def main():
             message["trust"] = 1
             messages.append(message)
             id_counter += 1
+    for hour in range(message_sending_hours + 1, total_hours):
+        users_to_consider = []
+        for i in range(hour, total_hours):
+            users_to_consider.extend(active_userpool_per_hour[i])
+        users_to_consider = set(users_to_consider)
+        del_users[hour - 1] = list(unfiltered_users - users_to_consider)
+        print("Filtered users:", len(del_users[hour - 1]))
+    del_users[total_hours - 1] = []
     config["messages"] = messages
     config["del-users"] = del_users
     with open(current_message_file, "w+") as outfile:
