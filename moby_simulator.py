@@ -29,6 +29,7 @@ class Message:
 
 network_state_old = defaultdict(set)
 network_state_new = defaultdict(set)
+dead_user_map = {}
 message_queue = {}
 message_pool = []
 queue_occupancy = defaultdict(dict)
@@ -43,6 +44,7 @@ def main():
     global network_state_old
     global queue_occupancy
     global message_pool
+    global dead_user_map
     message_delays = defaultdict(int)
     parser = argparse.ArgumentParser(description='Moby simulation script.')
     parser.add_argument('--configuration', help='Configuration to use for the simulation', type=str, nargs='?', default=0)
@@ -76,6 +78,7 @@ def main():
     jam_user_set = set(config["jam-user-list"])
     messages = config["messages"]
     slack_hook = config["slack-hook"]
+    dead_user_map = config["del-users"]
     message_pool = [None] * len(messages)
     userpool = config["userpool"]
     for u in userpool:
@@ -155,7 +158,10 @@ def main():
             for msgid in range(len(message_pool)):
                 m = message_pool[msgid]
                 if not message_delivered[msgid]:
-                    mq = message_queue[m.dst]
+                    try:
+                        mq = message_queue[m.dst]
+                    except KeyError:
+                        continue
                     if mq[msgid]:
                         message_delivered[msgid] = 1
                         hour_of_simulation = ((current_day - start_day)*24) + current_hour
@@ -165,6 +171,7 @@ def main():
                 network_state_old[key] = value
             with open(result_file, "a+") as out_file:
                 out_file.write(getline(current_day, current_hour, len(users_this_hour), len(dirty_nodes), message_delivered.count(), total_messages))
+            delete_dead_users(message_hour)
     with open(result_file_queue_occupancy, "w") as outfile:
         for day in list(range(start_day, end_day)):
             for hour in list(range(0,24)):
@@ -184,6 +191,12 @@ def main():
             requests.post(slack_hook, json=payload, headers=headers)
         except requests.exceptions.MissingSchema:
             print("Problem with posting to slack. Check hook URL!!")
+
+def delete_dead_users(hour):
+    dead_users = dead_user_map[str(hour)]
+    print("Deleting user for hour:", hour, len(dead_users))
+    for u in dead_users:
+        del(message_queue[u])
 
 def getline(*args):
     retstr = str(args[0])
