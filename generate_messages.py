@@ -174,8 +174,6 @@ def main():
             id_counter += 1
     config["messages"] = messages
     config["del-users"] = del_users
-    for k, v in del_users.items():
-        print("Del users:", len(v))
     with open(current_message_file, "w+") as outfile:
         json.dump(config, outfile)
     print("Message generation complete and written to file:", current_message_file)
