@@ -67,7 +67,7 @@ def main():
     total_hours = (end_day - start_day) * 24
     message_sending_hours = total_hours - cooldown
     h = 0
-    print(message_sending_hours)
+    print(total_hours, message_sending_hours)
     for current_day in range(start_day, end_day):
         for current_hour in range(0,24):
             current_data_file = DATA_FILE_PREFIX + str(city) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
@@ -157,7 +157,7 @@ def main():
             users_to_consider.extend(active_userpool_per_hour[i])
         users_to_consider = set(users_to_consider)
         if hour > 0:
-            del_users[hour - 1] = list(unfiltered_users - users_to_consider)
+            del_users[hour - 1] = unfiltered_users - users_to_consider
             print("Filtered users:", len(del_users[hour - 1]))
         for i in range(int(math.ceil(message_number))):
             message = {}
@@ -173,13 +173,19 @@ def main():
             message["trust"] = 1
             messages.append(message)
             id_counter += 1
-    for hour in range(message_sending_hours + 1, total_hours):
+    for hour in range(message_sending_hours, total_hours):
         users_to_consider = []
         for i in range(hour, total_hours):
             users_to_consider.extend(active_userpool_per_hour[i])
         users_to_consider = set(users_to_consider)
-        del_users[hour - 1] = list(unfiltered_users - users_to_consider)
+        del_users[hour - 1] = unfiltered_users - users_to_consider
         print("Filtered users:", len(del_users[hour - 1]))
+    del_users[total_hours - 1] = set()
+    for hour in range(1, total_hours):
+        for h in range(0, hour):
+            del_users[hour] -= del_users[h]
+    for hour in range(len(del_users)):
+        del_users[hour] = list(del_users[hour])
     del_users[total_hours - 1] = []
     config["messages"] = messages
     config["del-users"] = del_users
