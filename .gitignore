@@ -4,5 +4,7 @@
 *.png
 *.jpg
 *.json
+*.iml
+.idea/
 data/
 ExperimentsData/
