@@ -168,7 +168,6 @@ public class MobySimulator {
         System.out.println(messageQueue.size());
 
         // Parse towers file and get all information.
-
         networkStateOld = new HashMap<>();
         // For the range of days.
         for(currentDay = startDay; currentDay < endDay; currentDay ++) {
@@ -254,21 +253,34 @@ public class MobySimulator {
                         }
                     }
                 }
-
-                // Write queue occupancies.
-
                 // Delete dead users.
                 System.out.println("Deleting " + deleteUsersList.get(simulationHour).size() + " users!!");
                 for(int user : deleteUsersList.get(simulationHour)) {
                     messageQueue.remove(user);
                     messageQueueBits.remove(user);
                 }
+
+                // Write delivery ratio.
+
+                // Write queue occupancy.
+
                 networkStateOld = networkStateNew;
                 // Do next hour.
             }
         }
 
         // Write message delays.
+        try {
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(messageDelaysFile));
+            Iterator iterator = messageDelays.entrySet().iterator();
+            while(iterator.hasNext()) {
+                HashMap.Entry entry = (HashMap.Entry)iterator.next();
+                bufferedWriter.write(entry.getKey().toString() + "," + entry.getValue().toString() + '\n');
+            }
+            bufferedWriter.close();
+        } catch(IOException e) {
+            System.out.println("IOException at writing message delays file!!");
+        }
         // Simulation done, send message to slack.
     }
 
