@@ -80,6 +80,8 @@ public class MobySimulator {
         int simulationHour;
         int messagesInCirculation = 0;
         HashMap<Integer, Integer> messageDelays = new HashMap<>();
+        BufferedWriter resultsFileBuffer = null;
+        BufferedWriter queueOccupancyFileBuffer = null;
 
         try {
             configID = args[0];
@@ -169,6 +171,14 @@ public class MobySimulator {
 
         // Parse towers file and get all information.
         networkStateOld = new HashMap<>();
+
+        // Open results file and queue occupancy file.
+        try {
+            resultsFileBuffer = new BufferedWriter(new FileWriter(resultFile));
+            queueOccupancyFileBuffer = new BufferedWriter(new FileWriter(queueOccupancyFile));
+        } catch (IOException e) {
+            System.out.println("Problem opening results file or queue occupancy file!!");
+        }
         // For the range of days.
         for(currentDay = startDay; currentDay < endDay; currentDay ++) {
             // For the hours of a day.
@@ -253,6 +263,33 @@ public class MobySimulator {
                         }
                     }
                 }
+
+                // Write delivery ratio.
+                try {
+                    resultsFileBuffer.write(
+                                currentDay + "," +
+                                    currentHour + "," +
+                                    currentHourUsers.size() + "," +
+                                    messageDelays.size() + "," +
+                                    messagesInCirculation + '\n');
+                } catch (IOException e) {
+                    System.out.println("Problem writing delivery ratios!!");
+                }
+
+                // Write queue occupancy.
+                try {
+                    for(int user : currentHourUsers) {
+                        queueOccupancyFileBuffer.write(
+                                currentDay + "," +
+                                        currentHour + "," +
+                                        user + "," +
+                                        messageQueueBits.get(user).cardinality() + '\n');
+
+                    }
+                } catch (IOException e) {
+                    System.out.println("Problem writing queue occupancies!!");
+                }
+
                 // Delete dead users.
                 System.out.println("Deleting " + deleteUsersList.get(simulationHour).size() + " users!!");
                 for(int user : deleteUsersList.get(simulationHour)) {
@@ -260,13 +297,17 @@ public class MobySimulator {
                     messageQueueBits.remove(user);
                 }
 
-                // Write delivery ratio.
-
-                // Write queue occupancy.
-
                 networkStateOld = networkStateNew;
                 // Do next hour.
             }
+        }
+
+        // Close results file and queue occupancy file.
+        try {
+            resultsFileBuffer.close();
+            queueOccupancyFileBuffer.close();
+        } catch (IOException e) {
+            System.out.println("Problem closing results file or qo file!!");
         }
 
         // Write message delays.
