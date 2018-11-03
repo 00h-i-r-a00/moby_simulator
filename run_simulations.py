@@ -52,7 +52,7 @@ def main():
                 msg_gen_string += "--" + key + " " + str(value) + " "
             cnf_id = str(conf["configuration"])
             print(conf)
-            msg_gen_string += ' && ./moby_simulator.py --configuration ' + cnf_id + '" > data/logs/'+ cnf_id+'.nohup &'
+            msg_gen_string += ' && java -cp bin/:jars/*:  MobySimulator ' + cnf_id + '" > data/logs/' + cnf_id + '.nohup &'
             print (msg_gen_string)
             os.system(msg_gen_string)
         time.sleep(SLEEP_TIME)
