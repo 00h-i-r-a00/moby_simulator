@@ -1,9 +1,15 @@
-import com.google.common.collect.Sets;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 
 import java.io.*;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 
 public class MobySimulator {
@@ -27,7 +33,6 @@ public class MobySimulator {
 
 
         // Create all datastructures needed for simulation.
-
         String configID = "";
         String configFile = "";
         String resultFile = "";
@@ -56,7 +61,7 @@ public class MobySimulator {
         List<MobyMessage> messageList = new ArrayList<>();
         List<List<Integer>> deleteUsersList = new ArrayList<>();
         String distributionType;
-        String slackHook;
+        String slackHook = "";
 
         JsonArray jsonArray;
         JsonObject jsonObject;
@@ -118,6 +123,7 @@ public class MobySimulator {
         jamUser = configurationJson.get("jam-user").getAsInt();
         jamUserLogic = configurationJson.get("jam-user-logic").getAsInt();
         numberOfDays = endDay - startDay;
+        slackHook = configurationJson.get("slack-hook").getAsString();
 
         // Convert messages to our own objects.
 
@@ -296,6 +302,7 @@ public class MobySimulator {
                     messageQueue.remove(user);
                     messageQueueBits.remove(user);
                 }
+                // TODO: Test to see what happens if we manually trigger GC after these deletes.
 
                 networkStateOld = networkStateNew;
                 // Do next hour.
@@ -322,7 +329,32 @@ public class MobySimulator {
         } catch(IOException e) {
             System.out.println("IOException at writing message delays file!!");
         }
+
         // Simulation done, send message to slack.
+        if(!slackHook.isEmpty()) {
+            System.out.println("Sending slack message!!");
+            String payload = null;
+            HttpPost httpPost = new HttpPost(slackHook);
+            httpPost.setHeader("Content-type", "application/json");
+            CloseableHttpClient httpClient = HttpClients.createDefault();
+            try {
+                payload = "{ \"text\": \"Simulation " + configID + " done on " + InetAddress.getLocalHost().getHostName() + " \" }";
+                httpPost.setEntity(new StringEntity(payload));
+                CloseableHttpResponse closeableHttpResponse  = httpClient.execute(httpPost);
+                if(closeableHttpResponse.getStatusLine().getStatusCode() == 200)
+                    System.out.println("Successful post to slack!!");
+                else
+                    System.out.println("Failed trying to post to slack!!");
+                closeableHttpResponse.close();
+            } catch (UnknownHostException e) {
+                System.out.println("Unknown host!!");
+            } catch (UnsupportedEncodingException e) {
+                System.out.println("Unsupported encoding!!");
+            } catch (IOException e) {
+                System.out.println("IOException!!");
+            }
+        }
+
     }
 
     //Message exchange handler
