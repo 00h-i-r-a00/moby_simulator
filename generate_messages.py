@@ -168,7 +168,7 @@ def main():
             src, dst = random.sample(users_to_consider.intersection(userpool_keys), 2)
             message["src"] = src
             message["dst"] = dst
-            message["ttl"] = 72
+            message["ttl"] = time_to_live
             message["hop"] = 0
             message["trust"] = 1
             messages.append(message)
