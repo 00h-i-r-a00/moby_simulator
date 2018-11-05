@@ -8,8 +8,8 @@ import sys
 
 RESULTS_DIR = "data/results/"
 RESULTS_EXT = ".csv"
-MESSAGE_DELAYS_EXT = '_message_delays.csv'
-QUEUE_OCCUPANCY_EXT = '_queue_occupancy.csv'
+MESSAGE_DELAYS_EXT = '.md'
+QUEUE_OCCUPANCY_EXT = '.qo'
 
 def main():
     parser = argparse.ArgumentParser(description='Moby result completion checker.')
