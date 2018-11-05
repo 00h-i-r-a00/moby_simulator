@@ -87,6 +87,7 @@ public class MobySimulator {
         HashMap<Integer, Integer> messageDelays = new HashMap<>();
         BufferedWriter resultsFileBuffer = null;
         BufferedWriter queueOccupancyFileBuffer = null;
+        ArrayList<MobyMessage> deleteList = new ArrayList<>();
 
         try {
             configID = args[0];
@@ -173,7 +174,7 @@ public class MobySimulator {
             messageQueue.put(user, new HashMap<>());
             messageQueueBits.put(user, new BitSet(messageList.size()));
         }
-        System.out.println(messageQueue.size());
+        System.out.println(messageQueueBits.size());
 
         // Parse towers file and get all information.
         networkStateOld = new HashMap<>();
@@ -296,6 +297,26 @@ public class MobySimulator {
                     System.out.println("Problem writing queue occupancies!!");
                 }
 
+                // Reduce TTLs and drop messages.
+                System.out.println("TTL check!");
+                deleteList.clear();
+                for(MobyMessage m : messageList) {
+                    if(m.hour <= simulationHour) {
+                        m.ttl--;
+                        System.out.println("TTL updated:" + m.ttl);
+                        if(m.ttl < 0)
+                            deleteList.add(m);
+                    }
+                }
+                System.out.println("Deleting" + deleteList.size());
+                for(MobyMessage m : deleteList) {
+                    messageList.remove(m);
+                    for(int user : messageQueueBits.keySet()) {
+                        messageQueue.get(user).remove(m.id);
+                        messageQueueBits.get(user).clear(m.id);
+                    }
+                }
+
                 // Delete dead users.
                 System.out.println("Deleting " + deleteUsersList.get(simulationHour).size() + " users!!");
                 for(int user : deleteUsersList.get(simulationHour)) {
@@ -396,6 +417,7 @@ public class MobySimulator {
 
                 mqb2.or(messageQueueBits.get(u1));
                 mqb2.andNot(messageQueueBits.get(u2));
+
 
                 for(int bitIndex = mqb1.nextSetBit(0); bitIndex >= 0; bitIndex = mqb1.nextSetBit(bitIndex+1)) {
                     mq1.put(bitIndex, mq2.get(bitIndex));
