@@ -8,7 +8,7 @@ import sys
 
 RESULTS_PREFIX = 'data/results/'
 REPORTS_PREFIX = 'data/reports/'
-MESSAGE_DELAYS_EXT = '_message_delays.csv'
+MESSAGE_DELAYS_EXT = '.md'
 
 def main():
     parser = argparse.ArgumentParser(description='Script to plot moby message delays into a histogram.')
