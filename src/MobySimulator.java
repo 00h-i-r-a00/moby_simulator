@@ -166,6 +166,10 @@ public class MobySimulator {
             deleteUsersList.add(integerArrayList);
         }
 
+        // Deal with default queue size.
+        if(queueSize == 0)
+            queueSize = messageList.size();
+
         // Done with the configuration json!
         configurationJson = null;
         firstHour = true;
@@ -303,12 +307,11 @@ public class MobySimulator {
                 for(MobyMessage m : messageList) {
                     if(m.hour <= simulationHour) {
                         m.ttl--;
-                        System.out.println("TTL updated:" + m.ttl);
                         if(m.ttl < 0)
                             deleteList.add(m);
                     }
                 }
-                System.out.println("Deleting" + deleteList.size());
+                System.out.println("Deleting " + deleteList.size() + " dead messages!!");
                 for(MobyMessage m : deleteList) {
                     messageList.remove(m);
                     for(int user : messageQueueBits.keySet()) {
@@ -385,22 +388,22 @@ public class MobySimulator {
 
         // Perform exchanges one way.
         for(int tower : towerIDs)
-            performMessageExchange(networkStateNew.get(tower), currentDay, currentHour);
+            performMessageExchange(networkStateNew.get(tower), queueSize);
 
         Collections.reverse(towerIDs);
 
         for(int tower : towerIDs)
-            performMessageExchange(networkStateNew.get(tower), currentDay, currentHour);
+            performMessageExchange(networkStateNew.get(tower), queueSize);
 
         // Perform exchanges the other way.
     }
 
     // Perform message exchange in tower
-    private static void performMessageExchange(Set<Integer> users, int currentDay, int currentHour){
-        // For all pairs of users, just send messages from one queue to the other.
-        String queueKey = currentDay + "," + currentHour;
+    private static void performMessageExchange(Set<Integer> users, int queueSize){
+        // For all pairs of users, send messages from one queue to the other with queue constraints in mind.
         HashMap<Integer, Double> mq1, mq2;
         BitSet mqb1, mqb2, u1mqb, u2mqb;
+        int space1, space2;
         for (int u1 : users) {
             for (int u2 : users) {
                 mq1 = messageQueue.get(u1);
@@ -418,15 +421,19 @@ public class MobySimulator {
                 mqb2.or(messageQueueBits.get(u1));
                 mqb2.andNot(messageQueueBits.get(u2));
 
+                space1 = queueSize - u1mqb.cardinality();
+                space2 = queueSize - u2mqb.cardinality();
 
-                for(int bitIndex = mqb1.nextSetBit(0); bitIndex >= 0; bitIndex = mqb1.nextSetBit(bitIndex+1)) {
+                for(int bitIndex = mqb1.nextSetBit(0); bitIndex >= 0 && space1 > 0; bitIndex = mqb1.nextSetBit(bitIndex+1)) {
                     mq1.put(bitIndex, mq2.get(bitIndex));
                     u1mqb.set(bitIndex);
+                    space1--;
                 }
 
-                for(int bitIndex = mqb2.nextSetBit(0); bitIndex >= 0; bitIndex = mqb2.nextSetBit(bitIndex+1)) {
+                for(int bitIndex = mqb2.nextSetBit(0); bitIndex >= 0 && space2 > 0; bitIndex = mqb2.nextSetBit(bitIndex+1)) {
                     mq2.put(bitIndex, mq1.get(bitIndex));
                     u2mqb.set(bitIndex);
+                    space2--;
                 }
             }
         }
