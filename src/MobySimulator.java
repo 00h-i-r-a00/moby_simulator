@@ -59,7 +59,6 @@ public class MobySimulator {
         List<Integer> jamTowerList = new ArrayList<>();
         List<Integer> jamUserList = new ArrayList<>();
         List<MobyMessage> messageList = new ArrayList<>();
-        List<List<Integer>> deleteUsersList = new ArrayList<>();
         String distributionType;
         String slackHook = "";
 
@@ -154,16 +153,6 @@ public class MobySimulator {
         jsonArray = configurationJson.get("jam-tower-list").getAsJsonArray();
         for(i = 0; i < jsonArray.size(); i++) {
             jamTowerList.add(jsonArray.get(i).getAsInt());
-        }
-
-        jsonObject = configurationJson.get("del-users").getAsJsonObject();
-        for(i = 0; i < jsonObject.size(); i++) {
-            jsonArray = jsonObject.get("" + i).getAsJsonArray();
-            integerArrayList = new ArrayList<>();
-            for(j = 0; j < jsonArray.size(); j++) {
-                integerArrayList.add(jsonArray.get(j).getAsInt());
-            }
-            deleteUsersList.add(integerArrayList);
         }
 
         // Deal with default queue size.
@@ -324,12 +313,6 @@ public class MobySimulator {
                     }
                 }
 
-                // Delete dead users.
-                System.out.println("Deleting " + deleteUsersList.get(simulationHour).size() + " users!!");
-                for(int user : deleteUsersList.get(simulationHour)) {
-                    messageQueue.remove(user);
-                    messageQueueBits.remove(user);
-                }
                 // TODO: Test to see what happens if we manually trigger GC after these deletes.
 
                 networkStateOld = networkStateNew;
