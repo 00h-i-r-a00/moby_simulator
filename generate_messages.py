@@ -22,6 +22,7 @@ towers_seen = defaultdict(bool)
 user_mobility = defaultdict(list)
 def main():
     userpool = defaultdict(int)
+    users_to_consider = defaultdict(set)
     active_userpool_per_hour = {}
     del_users = {}
     parser = argparse.ArgumentParser(description='Moby message generation script script.')
@@ -87,6 +88,8 @@ def main():
                         for u in users_this_hour:
                             user_mobility[u].append(tower_id)
             users_this_hour = set(users_this_hour)
+            for j in range(0, h):
+                users_to_consider[j] = users_to_consider[j].union(users_this_hour)
             active_userpool_per_hour[h] = users_this_hour
             h += 1
             for u in users_this_hour:
@@ -152,20 +155,14 @@ def main():
     userpool_keys = sorted(userpool.keys())
     for hour in range(message_sending_hours):
         message_number = distribution[hour]
-        users_to_consider = []
-        for i in range(hour, total_hours):
-            users_to_consider.extend(active_userpool_per_hour[i])
-        users_to_consider = set(users_to_consider)
-        if hour > 0:
-            del_users[hour - 1] = unfiltered_users - users_to_consider
-            print("Filtered users:", len(del_users[hour - 1]))
+        users_to_sample = users_to_consider[hour].intersection(userpool_keys)
         for i in range(int(math.ceil(message_number))):
             message = {}
             message["hour"] = hour
             message["id"] = id_counter
             # Don't use the message_generation_type flag for now, maybe need it in the future.
             # if message_generation_type == 1:
-            src, dst = random.sample(users_to_consider.intersection(userpool_keys), 2)
+            src, dst = random.sample(users_to_sample, 2)
             message["src"] = src
             message["dst"] = dst
             message["ttl"] = time_to_live
@@ -173,22 +170,7 @@ def main():
             message["trust"] = 1
             messages.append(message)
             id_counter += 1
-    for hour in range(message_sending_hours, total_hours):
-        users_to_consider = []
-        for i in range(hour, total_hours):
-            users_to_consider.extend(active_userpool_per_hour[i])
-        users_to_consider = set(users_to_consider)
-        del_users[hour - 1] = unfiltered_users - users_to_consider
-        print("Filtered users:", len(del_users[hour - 1]))
-    del_users[total_hours - 1] = set()
-    for hour in range(1, total_hours):
-        for h in range(0, hour):
-            del_users[hour] -= del_users[h]
-    for hour in range(len(del_users)):
-        del_users[hour] = list(del_users[hour])
-    del_users[total_hours - 1] = []
     config["messages"] = messages
-    config["del-users"] = del_users
     with open(current_message_file, "w+") as outfile:
         json.dump(config, outfile)
     print("Message generation complete and written to file:", current_message_file)
