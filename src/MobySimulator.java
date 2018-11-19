@@ -250,6 +250,10 @@ public class MobySimulator {
                     }
                 }
 
+                // Jam towers based on the jam tower list provided by generate messages.
+                for (int jamTowerID : jamTowerList) {
+                    networkStateNew.remove(jamTowerID);
+                }
 
                 // At this point, the old simulator would figure out who moved and things like that, that's unnecessary imo.
                 List<Integer> sortedList = new ArrayList<>();
