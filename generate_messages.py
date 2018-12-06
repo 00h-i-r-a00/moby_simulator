@@ -118,6 +118,7 @@ def main():
     config["jam-tower"] = jam_tower
     config["jam-tower-logic"] = jam_tower_logic
     config["slack-hook"] = slack_hook
+    config["cooldown"] = cooldown
     random.seed(seed)
     if jam_tower > 0:
         print("Generating jammed towers list.")
@@ -127,6 +128,7 @@ def main():
         elif jam_tower_logic == 1:
             print("Logic for tower jamming: Population oracle. Jamming", jam_tower, "towers.")
             jam_tower_list = [tower for tower in sorted(tower_population, key=tower_population.get, reverse=True)][:jam_tower]
+    config["all-towers"] = sorted(towers_seen.keys())
     config["jam-tower-list"] = jam_tower_list
     config["jam-user"] = jam_user
     config["jam-user-logic"] = jam_user_logic
