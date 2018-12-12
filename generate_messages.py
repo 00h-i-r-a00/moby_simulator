@@ -97,16 +97,16 @@ def main():
     print("Active userpool per hour len", len(active_userpool_per_hour))
     print("Total users seen: ", len(userpool))
     allusers = dict(userpool)
-    unfiltered_users = set(allusers.keys())
     #faster method to delete
     userpool = dict((k, v) for (k, v) in userpool.items() if v >= threshold)
+    filtered_users = set(userpool.keys())
     print("Users above threshold: ", len(userpool), " percentage: ", (float(len(userpool))/float(len(allusers)) * 100), "%")
     users_in_pool = list(userpool.keys())
     current_message_file = SEED_FILE_PREFIX + str(configuration) + CONFIGURATION_FILE_FORMAT
     config = {}
     config["alluserslen"] = len(allusers)
     config["userpoollen"] = len(userpool)
-    config["userpool"] = list(unfiltered_users)
+    config["userpool"] = list(filtered_users)
     config["city"] = city
     config["start-day"] = start_day
     config["end-day"] = end_day
