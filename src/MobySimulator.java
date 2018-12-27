@@ -11,6 +11,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.lang.Math;
 
 public class MobySimulator {
 
@@ -27,6 +28,11 @@ public class MobySimulator {
     private static HashMap<Integer, HashMap<Integer, Double> > messageQueue = new HashMap<>();
     private static HashMap<Integer, Set<Integer>> networkStateNew = null;
     private static HashMap<Integer, BitSet> messageQueueBits = new HashMap<>();
+    private static HashMap<Integer, BitSet> dosQueueBits = new HashMap<>();
+    private static ArrayList<Integer> allTowers = new ArrayList<>();
+    private static int dosBitsSize;
+    private static int timeToLive = 0;
+    private static int dosNumber;
 
     public static void main(String[] args){
 
@@ -47,13 +53,12 @@ public class MobySimulator {
         int queueSize;
         int numberOfDays;
         int threshold;
-        int dosNumber;
         int jamTower;
         int jamTowerLogic;
         int jamUser;
         int jamUserLogic;
         int allUserLength;
-        int userPoolLength;
+        int cooldownHours;
 
         List<Integer> userPool = new ArrayList<>();
         List<Integer> jamTowerList = new ArrayList<>();
@@ -124,12 +129,17 @@ public class MobySimulator {
         jamUserLogic = configurationJson.get("jam-user-logic").getAsInt();
         numberOfDays = endDay - startDay;
         slackHook = configurationJson.get("slack-hook").getAsString();
+        cooldownHours = configurationJson.get("cooldown").getAsInt();
+
 
         // Convert messages to our own objects.
-
         jsonArray = configurationJson.get("messages").getAsJsonArray();
         for(i = 0; i < jsonArray.size(); i++) {
             jsonObject = (JsonObject) jsonArray.get(i);
+
+            if(i == 0) timeToLive =  jsonObject.get("ttl").getAsInt();
+            // Enforce unchanging TTL here?
+
             messageList.add(new MobyMessage(
                     jsonObject.get("id").getAsInt(),
                     jsonObject.get("ttl").getAsInt(),
@@ -155,6 +165,11 @@ public class MobySimulator {
             jamTowerList.add(jsonArray.get(i).getAsInt());
         }
 
+        jsonArray = configurationJson.get("all-towers").getAsJsonArray();
+        for(i = 0; i < jsonArray.size(); i++) {
+            allTowers.add(jsonArray.get(i).getAsInt());
+        }
+
         // Deal with default queue size.
         if(queueSize == 0)
             queueSize = messageList.size();
@@ -162,10 +177,13 @@ public class MobySimulator {
         // Done with the configuration json!
         configurationJson = null;
         firstHour = true;
-        System.out.println("Creating per user hashmaps");
+        System.out.println("Creating per user hashmaps :" + userPool.size());
+        dosBitsSize = allTowers.size() * dosNumber * ((numberOfDays * 24) - cooldownHours);
         for(int user : userPool) {
             messageQueue.put(user, new HashMap<>());
             messageQueueBits.put(user, new BitSet(messageList.size()));
+            if (dosBitsSize > 0)
+                dosQueueBits.put(user, new BitSet(dosBitsSize));
         }
         System.out.println(messageQueueBits.size());
 
@@ -226,8 +244,9 @@ public class MobySimulator {
                 }
                 scanner.close();
 
-                System.out.println("Total users seen this hour:" + userCounter);
-                System.out.println("Unique users seen this hour:" + currentHourUsers.size());
+                System.out.println("Total users seen this hour: " + userCounter);
+                System.out.println("Unique users seen this hour: " + currentHourUsers.size());
+                System.out.println("Userset new people: " + userPool.containsAll(currentHourUsers));
 
                 // Send out messages for this hour.
                 // TODO: Might be a better way to do this than parse the entire list of messages.
@@ -250,7 +269,7 @@ public class MobySimulator {
                 Collections.sort(sortedList);
 
                 // Simulation message exchanges.
-                messageExchangeHandler(sortedList, currentDay, currentHour, dosNumber, queueSize);
+                messageExchangeHandler(sortedList, simulationHour, dosNumber, queueSize);
 
                 // Check message deliveries.
                 for(MobyMessage m : messageList) {
@@ -263,6 +282,7 @@ public class MobySimulator {
                                 System.out.println("Message: " + m.id + " Delay: " + (simulationHour - m.hour));
                             }
                         } catch (NullPointerException e) {
+                            System.out.println("Exception: " + e.toString());
                             // Dead user!!
                         }
                     }
@@ -282,14 +302,22 @@ public class MobySimulator {
 
                 // Write queue occupancy.
                 try {
+                    int totalDosMsgs = 0;
+                    int cardinality = 0;
                     for(int user : currentHourUsers) {
+                        if(dosNumber > 0) {
+                            cardinality = (messageQueueBits.get(user).cardinality() + dosQueueBits.get(user).cardinality());
+                            totalDosMsgs += dosQueueBits.get(user).cardinality();
+                        } else {
+                            cardinality = messageQueueBits.get(user).cardinality();
+                        }
                         queueOccupancyFileBuffer.write(
                                 currentDay + "," +
                                         currentHour + "," +
                                         user + "," +
-                                        messageQueueBits.get(user).cardinality() + '\n');
-
+                                        cardinality + '\n');
                     }
+                    System.out.println("Avg. DOS occupancy: " + totalDosMsgs/currentHourUsers.size());
                 } catch (IOException e) {
                     System.out.println("Problem writing queue occupancies!!");
                 }
@@ -304,6 +332,7 @@ public class MobySimulator {
                             deleteList.add(m);
                     }
                 }
+
                 System.out.println("Deleting " + deleteList.size() + " dead messages!!");
                 for(MobyMessage m : deleteList) {
                     messageList.remove(m);
@@ -318,6 +347,8 @@ public class MobySimulator {
                 networkStateOld = networkStateNew;
                 // Do next hour.
             }
+            // Do next day.
+            // sendSlackMessage(slackHook, "Day: " + currentDay + " done!!");
         }
 
         // Close results file and queue occupancy file.
@@ -342,54 +373,111 @@ public class MobySimulator {
         }
 
         // Simulation done, send message to slack.
-        if(!slackHook.isEmpty()) {
-            System.out.println("Sending slack message!!");
-            String payload = null;
-            HttpPost httpPost = new HttpPost(slackHook);
-            httpPost.setHeader("Content-type", "application/json");
-            CloseableHttpClient httpClient = HttpClients.createDefault();
-            try {
-                payload = "{ \"text\": \"Simulation " + configID + " done on " + InetAddress.getLocalHost().getHostName() + " \" }";
-                httpPost.setEntity(new StringEntity(payload));
-                CloseableHttpResponse closeableHttpResponse  = httpClient.execute(httpPost);
-                if(closeableHttpResponse.getStatusLine().getStatusCode() == 200)
-                    System.out.println("Successful post to slack!!");
-                else
-                    System.out.println("Failed trying to post to slack!!");
-                closeableHttpResponse.close();
-            } catch (UnknownHostException e) {
-                System.out.println("Unknown host!!");
-            } catch (UnsupportedEncodingException e) {
-                System.out.println("Unsupported encoding!!");
-            } catch (IOException e) {
-                System.out.println("IOException!!");
-            }
-        }
+        sendSlackMessage(slackHook, "Simulation " + configID + " done.");
 
     }
 
+    private static void sendSlackMessage(String slackHook, String message) {
+        if(slackHook.isEmpty())
+            return;
+        System.out.println("Sending slack message!!");
+        String payload = null;
+        HttpPost httpPost = new HttpPost(slackHook);
+        httpPost.setHeader("Content-type", "application/json");
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        try {
+            payload = "{ \"text\": \"" + message + " Host: " + InetAddress.getLocalHost().getHostName()  + " \"}";
+            httpPost.setEntity(new StringEntity(payload));
+            CloseableHttpResponse closeableHttpResponse  = httpClient.execute(httpPost);
+            if(closeableHttpResponse.getStatusLine().getStatusCode() == 200)
+                System.out.println("Successful post to slack!!");
+            else
+                System.out.println("Failed trying to post to slack!!");
+            closeableHttpResponse.close();
+        } catch (UnknownHostException e) {
+            System.out.println("Unknown host!!");
+        } catch (UnsupportedEncodingException e) {
+            System.out.println("Unsupported encoding!!");
+        } catch (IOException e) {
+            System.out.println("IOException!!");
+        }
+    }
+
     //Message exchange handler
-    private static void messageExchangeHandler(List<Integer> towerIDs, int currentDay, int currentHour,
+    private static void messageExchangeHandler(List<Integer> towerIDs, int simulationHour,
                                         int dosNumber, int queueSize){
-        // TODO: Perform DoS exchanges.
+
+        System.out.println("Sim hour: " + simulationHour + " TTL: " + timeToLive);
+
+        // Dos stuff if it's a Dos sim.
+        if(dosNumber > 0 ) {
+            // First delete old Dos Messages.
+            if (simulationHour > timeToLive) {
+                for (int tower : towerIDs) {
+                    int clearIndex = ((allTowers.size()) * (simulationHour - timeToLive));
+                    clearIndex -= 1;
+                    for (int u : networkStateNew.get(tower))
+                        dosQueueBits.get(u).clear(0, clearIndex);
+                }
+                // Then perform Dos Exchanges.
+                for (int tower : towerIDs)
+                    performDosExchange(networkStateNew.get(tower), tower, simulationHour, queueSize);
+            }
+        }
 
         // Perform exchanges one way.
         for(int tower : towerIDs)
             performMessageExchange(networkStateNew.get(tower), queueSize);
 
+        // Reverse tower order.
         Collections.reverse(towerIDs);
 
+        // Perform exchanges the other way.
         for(int tower : towerIDs)
             performMessageExchange(networkStateNew.get(tower), queueSize);
 
-        // Perform exchanges the other way.
+    }
+
+    private static void performDosExchange(Set<Integer> users, int tower, int simulationHour, int queueSize) {
+        // Scaling one bit of dos queue to be equal to N messages
+        // all dos messages for an hour = number of towers = towerSizeX
+        // DosMQ = {towerSize0, towerSize1, towerSize2 ... towerSizeN}
+        // each bit here represents dosNumber of dos messages. Hence scale cardinality with dosNumber.
+        int dosIDBase = (allTowers.size() * simulationHour) + allTowers.indexOf(tower);
+        int freeSpace;
+        int toIndex;
+        BitSet allDosMessages = new BitSet(dosBitsSize);
+        BitSet userDosSet;
+        BitSet userDosQueue;
+        for(int u : users) {
+            allDosMessages.or(dosQueueBits.get(u));
+        }
+        allDosMessages.set(dosIDBase);
+        // DoS for tower for that time.
+        for(int u : users) {
+            // Overflow for now?
+            userDosQueue = dosQueueBits.get(u);
+            freeSpace = queueSize - (messageQueueBits.get(u).cardinality() + (userDosQueue.cardinality() * dosNumber));
+            userDosSet = (BitSet) allDosMessages.clone();
+            userDosSet.andNot(userDosQueue);
+            if (freeSpace > userDosSet.cardinality())
+                dosQueueBits.get(u).or(allDosMessages);
+            else {
+                int start = userDosSet.nextSetBit(0);
+                while(freeSpace > 0) {
+                    freeSpace -= dosNumber;
+                    userDosQueue.set(start);
+                    start = userDosSet.nextSetBit(start);
+                }
+            }
+        }
     }
 
     // Perform message exchange in tower
     private static void performMessageExchange(Set<Integer> users, int queueSize){
         // For all pairs of users, send messages from one queue to the other with queue constraints in mind.
         HashMap<Integer, Double> mq1, mq2;
-        BitSet mqb1, mqb2, u1mqb, u2mqb;
+        BitSet mqb1, mqb2, u1mqb, u2mqb, u1dqb, u2dqb;
         int space1, space2;
         for (int u1 : users) {
             for (int u2 : users) {
@@ -408,8 +496,15 @@ public class MobySimulator {
                 mqb2.or(messageQueueBits.get(u1));
                 mqb2.andNot(messageQueueBits.get(u2));
 
-                space1 = queueSize - u1mqb.cardinality();
-                space2 = queueSize - u2mqb.cardinality();
+                if(dosNumber > 0) {
+                    u1dqb = dosQueueBits.get(u1);
+                    u2dqb = dosQueueBits.get(u2);
+                    space1 = queueSize - (u1mqb.cardinality() + (u1dqb.cardinality() * dosNumber));
+                    space2 = queueSize - (u2mqb.cardinality() + (u2dqb.cardinality() * dosNumber));
+                } else {
+                    space1 = queueSize - u1mqb.cardinality();
+                    space2 = queueSize - u2mqb.cardinality();
+                }
 
                 for(int bitIndex = mqb1.nextSetBit(0); bitIndex >= 0 && space1 > 0; bitIndex = mqb1.nextSetBit(bitIndex+1)) {
                     mq1.put(bitIndex, mq2.get(bitIndex));
