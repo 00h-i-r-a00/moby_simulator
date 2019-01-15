@@ -15,6 +15,7 @@ DATA_FILE_FORMAT = ".twr"
 CONFIGURATION_FILE_FORMAT = ".config"
 COMMS_AGGREGATE_FILE_FORMAT = ".comagg"
 COMMS_USER_FILE_FORMAT = ".comuser"
+JSON = ".json"
 message_id_start = DATA_FILE_PREFIX
 overall_network_state = defaultdict(dict)
 tower_population = defaultdict(int)
@@ -43,6 +44,7 @@ def main():
     parser.add_argument('--jam-user', help='Number of users to jam.', type=int, nargs='?', default=0)
     parser.add_argument('--jam-user-logic', help='The logic used to pick users to jam.', type=int, nargs='?', default=0)
     parser.add_argument('--slack-hook', help='Webhook for slack signaling.', type=str, nargs='?', default="")
+    parser.add_argument('--trust-scores', help='Trust score file to be used.', type=str, nargs='?', default="")
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
     start_day = args.start_day
@@ -65,6 +67,12 @@ def main():
     jam_user_logic = args.jam_user_logic
     jam_user_list = []
     slack_hook = args.slack_hook
+    trust_scores = args.trust_scores
+    trust_file = DATA_FILE_PREFIX + trust_scores + JSON
+    with open(trust_file) as scores_file:
+        contacts = json.load(scores_file)
+        contacts = contacts["users"]
+        print("Done loading contact list", len(contacts))
     total_hours = (end_day - start_day) * 24
     message_sending_hours = total_hours - cooldown
     h = 0
@@ -119,6 +127,7 @@ def main():
     config["jam-tower-logic"] = jam_tower_logic
     config["slack-hook"] = slack_hook
     config["cooldown"] = cooldown
+    config["trust-scores"] = trust_scores
     random.seed(seed)
     if jam_tower > 0:
         print("Generating jammed towers list.")
