@@ -25,21 +25,19 @@ public class MobySimulator {
     private static final String MESSAGE_DELAYS_FORMAT = ".md";
 
 
-    private static HashMap<Integer, HashMap<Integer, Double> > messageQueue = new HashMap<>();
     private static HashMap<Integer, Set<Integer>> networkStateNew = null;
-    private static HashMap<Integer, BitSet> messageQueueBits = new HashMap<>();
-    private static HashMap<Integer, BitSet> dosQueueBits = new HashMap<>();
     private static ArrayList<Integer> allTowers = new ArrayList<>();
-    private static int dosBitsSize;
     private static int timeToLive = 0;
+    private static int dosBitsSize;
     private static int dosNumber;
+
+    private static HashMap<Integer, MobyUser> mobyUserHashMap = new HashMap<>();
 
     public static void main(String[] args){
 
-
-
         // Create all datastructures needed for simulation.
         String configID = "";
+        String trustScoreFile = "";
         String configFile = "";
         String resultFile = "";
         String queueOccupancyFile = "";
@@ -97,6 +95,20 @@ public class MobySimulator {
             configID = args[0];
         } catch(ArrayIndexOutOfBoundsException e) {
             System.out.println("Please pass a configuration ID!!");
+            return;
+        }
+
+        // Load trust scores from file.
+        if(!trustScoreFile.isEmpty()) {
+            try {
+                JsonObject trustScoreJson = jsonParser.parse(new FileReader(trustScoreFile)).getAsJsonObject();
+                jsonArray = trustScoreJson.getAsJsonArray("users");
+                System.out.println("Got trust scores for: " + jsonArray.size());
+                return;
+            } catch (FileNotFoundException e) {
+                System.out.println("Invalid trust score file supplied!!");
+                return;
+            }
         }
 
         // Build all input output filenames.
@@ -112,6 +124,7 @@ public class MobySimulator {
             configurationJson = jsonParser.parse(new FileReader(configFile)).getAsJsonObject();
         } catch (FileNotFoundException e) {
             System.out.println("Invalid config file supplied!!");
+            return;
         }
 
 
@@ -130,6 +143,7 @@ public class MobySimulator {
         numberOfDays = endDay - startDay;
         slackHook = configurationJson.get("slack-hook").getAsString();
         cooldownHours = configurationJson.get("cooldown").getAsInt();
+        trustScoreFile = configurationJson.get("trust-scores").getAsString();
 
 
         // Convert messages to our own objects.
@@ -177,15 +191,14 @@ public class MobySimulator {
         // Done with the configuration json!
         configurationJson = null;
         firstHour = true;
+
         System.out.println("Creating per user hashmaps :" + userPool.size());
-        dosBitsSize = allTowers.size() * dosNumber * ((numberOfDays * 24) - cooldownHours);
+        // 1 bit = dosnumber of bits, so just need one bit per hour per tower.
+        dosBitsSize = allTowers.size() * ((numberOfDays * 24) - cooldownHours);
         for(int user : userPool) {
-            messageQueue.put(user, new HashMap<>());
-            messageQueueBits.put(user, new BitSet(messageList.size()));
-            if (dosBitsSize > 0)
-                dosQueueBits.put(user, new BitSet(dosBitsSize));
+            MobyUser mobyUser = new MobyUser(user, queueSize, dosNumber, messageList.size(), dosBitsSize);
+            mobyUserHashMap.put(user, mobyUser);
         }
-        System.out.println(messageQueueBits.size());
 
         // Parse towers file and get all information.
         networkStateOld = new HashMap<>();
@@ -252,8 +265,7 @@ public class MobySimulator {
                 // TODO: Might be a better way to do this than parse the entire list of messages.
                 for(MobyMessage m : messageList) {
                     if(m.hour == simulationHour) {
-                        messageQueue.get(m.src).put(m.id, 1.0);
-                        messageQueueBits.get(m.src).set(m.id);
+                        mobyUserHashMap.get(m.src).addMessage(m.id, 1.0);
                         messagesInCirculation += 1;
                     }
                 }
@@ -276,7 +288,7 @@ public class MobySimulator {
                     if(!m.getDelivered()) {
                         try {
                             // TODO: This could be moved to checking the bitset instead.
-                            if (messageQueue.get(m.dst).containsKey(m.id)) {
+                            if(mobyUserHashMap.get(m.dst).hasMessage(m.id)) {
                                 m.setDelivered();
                                 messageDelays.put(m.id, simulationHour - m.hour);
                                 System.out.println("Message: " + m.id + " Delay: " + (simulationHour - m.hour));
@@ -302,22 +314,15 @@ public class MobySimulator {
 
                 // Write queue occupancy.
                 try {
-                    int totalDosMsgs = 0;
-                    int cardinality = 0;
                     for(int user : currentHourUsers) {
-                        if(dosNumber > 0) {
-                            cardinality = (messageQueueBits.get(user).cardinality() + dosQueueBits.get(user).cardinality());
-                            totalDosMsgs += dosQueueBits.get(user).cardinality();
-                        } else {
-                            cardinality = messageQueueBits.get(user).cardinality();
-                        }
                         queueOccupancyFileBuffer.write(
                                 currentDay + "," +
                                         currentHour + "," +
                                         user + "," +
-                                        cardinality + '\n');
+                                        mobyUserHashMap.get(user).getQueueOccupancy(dosNumber) + '\n');
                     }
-                    System.out.println("Avg. DOS occupancy: " + totalDosMsgs/currentHourUsers.size());
+                    // Don't think I really need this anywhere. Might be expensive computing it.
+                    // System.out.println("Avg. DOS occupancy: " + totalDosMsgs/currentHourUsers.size());
                 } catch (IOException e) {
                     System.out.println("Problem writing queue occupancies!!");
                 }
@@ -336,14 +341,13 @@ public class MobySimulator {
                 System.out.println("Deleting " + deleteList.size() + " dead messages!!");
                 for(MobyMessage m : deleteList) {
                     messageList.remove(m);
-                    for(int user : messageQueueBits.keySet()) {
-                        messageQueue.get(user).remove(m.id);
-                        messageQueueBits.get(user).clear(m.id);
-                    }
+                }
+
+                for(Map.Entry<Integer, MobyUser> userEntry : mobyUserHashMap.entrySet()) {
+                    userEntry.getValue().deleteMessages(deleteList);
                 }
 
                 // TODO: Test to see what happens if we manually trigger GC after these deletes.
-
                 networkStateOld = networkStateNew;
                 // Do next hour.
             }
@@ -411,30 +415,32 @@ public class MobySimulator {
 
         // Dos stuff if it's a Dos sim.
         if(dosNumber > 0 ) {
+
             // First delete old Dos Messages.
             if (simulationHour > timeToLive) {
                 for (int tower : towerIDs) {
                     int clearIndex = ((allTowers.size()) * (simulationHour - timeToLive));
                     clearIndex -= 1;
                     for (int u : networkStateNew.get(tower))
-                        dosQueueBits.get(u).clear(0, clearIndex);
+                        mobyUserHashMap.get(u).dropDos(clearIndex);
                 }
-                // Then perform Dos Exchanges.
-                for (int tower : towerIDs)
-                    performDosExchange(networkStateNew.get(tower), tower, simulationHour, queueSize);
             }
+
+            // Then perform Dos Exchanges.
+            for (int tower : towerIDs)
+                performDosExchange(networkStateNew.get(tower), tower, simulationHour, queueSize);
         }
 
         // Perform exchanges one way.
         for(int tower : towerIDs)
-            performMessageExchange(networkStateNew.get(tower), queueSize);
+            performMessageExchange(networkStateNew.get(tower));
 
         // Reverse tower order.
         Collections.reverse(towerIDs);
 
         // Perform exchanges the other way.
         for(int tower : towerIDs)
-            performMessageExchange(networkStateNew.get(tower), queueSize);
+            performMessageExchange(networkStateNew.get(tower));
 
     }
 
@@ -445,78 +451,50 @@ public class MobySimulator {
         // each bit here represents dosNumber of dos messages. Hence scale cardinality with dosNumber.
         int dosIDBase = (allTowers.size() * simulationHour) + allTowers.indexOf(tower);
         int freeSpace;
-        int toIndex;
         BitSet allDosMessages = new BitSet(dosBitsSize);
         BitSet userDosSet;
-        BitSet userDosQueue;
         for(int u : users) {
-            allDosMessages.or(dosQueueBits.get(u));
+            allDosMessages.or(mobyUserHashMap.get(u).getDosQueueBits());
         }
         allDosMessages.set(dosIDBase);
         // DoS for tower for that time.
         for(int u : users) {
             // Overflow for now?
-            userDosQueue = dosQueueBits.get(u);
-            freeSpace = queueSize - (messageQueueBits.get(u).cardinality() + (userDosQueue.cardinality() * dosNumber));
+            MobyUser mobyUser = mobyUserHashMap.get(u);
+
+            freeSpace = mobyUser.getFreeSpace(dosNumber);
+
             userDosSet = (BitSet) allDosMessages.clone();
-            userDosSet.andNot(userDosQueue);
-            if (freeSpace > userDosSet.cardinality())
-                dosQueueBits.get(u).or(allDosMessages);
-            else {
-                int start = userDosSet.nextSetBit(0);
-                while(freeSpace > 0) {
+            userDosSet.andNot(mobyUser.getDosQueueBits());
+
+            // Compute how many of the new dosSet messages we can accommodate.
+            if(freeSpace < (userDosSet.cardinality() * dosNumber)) {
+                int clearIndex = userDosSet.previousSetBit(dosBitsSize);
+                while (freeSpace > 0) {
                     freeSpace -= dosNumber;
-                    userDosQueue.set(start);
-                    start = userDosSet.nextSetBit(start);
+                    if(clearIndex < 0) {
+                        clearIndex = 0;
+                        break;
+                    }
                 }
+                userDosSet.clear(0, clearIndex);
             }
+
+            mobyUser.orDos(userDosSet);
         }
     }
 
     // Perform message exchange in tower
-    private static void performMessageExchange(Set<Integer> users, int queueSize){
+    private static void performMessageExchange(Set<Integer> users){
         // For all pairs of users, send messages from one queue to the other with queue constraints in mind.
-        HashMap<Integer, Double> mq1, mq2;
-        BitSet mqb1, mqb2, u1mqb, u2mqb, u1dqb, u2dqb;
-        int space1, space2;
+        MobyUser mobyUser1, mobyUser2;
         for (int u1 : users) {
             for (int u2 : users) {
-                mq1 = messageQueue.get(u1);
-                mq2 = messageQueue.get(u2);
+                mobyUser1 = mobyUserHashMap.get(u1);
+                mobyUser2 = mobyUserHashMap.get(u2);
 
-                u1mqb = messageQueueBits.get(u1);
-                u2mqb = messageQueueBits.get(u2);
-
-                mqb1 = (BitSet) messageQueueBits.get(u1).clone();
-                mqb2 = (BitSet) messageQueueBits.get(u2).clone();
-
-                mqb1.or(messageQueueBits.get(u2));
-                mqb1.andNot(messageQueueBits.get(u1));
-
-                mqb2.or(messageQueueBits.get(u1));
-                mqb2.andNot(messageQueueBits.get(u2));
-
-                if(dosNumber > 0) {
-                    u1dqb = dosQueueBits.get(u1);
-                    u2dqb = dosQueueBits.get(u2);
-                    space1 = queueSize - (u1mqb.cardinality() + (u1dqb.cardinality() * dosNumber));
-                    space2 = queueSize - (u2mqb.cardinality() + (u2dqb.cardinality() * dosNumber));
-                } else {
-                    space1 = queueSize - u1mqb.cardinality();
-                    space2 = queueSize - u2mqb.cardinality();
-                }
-
-                for(int bitIndex = mqb1.nextSetBit(0); bitIndex >= 0 && space1 > 0; bitIndex = mqb1.nextSetBit(bitIndex+1)) {
-                    mq1.put(bitIndex, mq2.get(bitIndex));
-                    u1mqb.set(bitIndex);
-                    space1--;
-                }
-
-                for(int bitIndex = mqb2.nextSetBit(0); bitIndex >= 0 && space2 > 0; bitIndex = mqb2.nextSetBit(bitIndex+1)) {
-                    mq2.put(bitIndex, mq1.get(bitIndex));
-                    u2mqb.set(bitIndex);
-                    space2--;
-                }
+                mobyUser1.performMessageExchange(mobyUser2, dosNumber);
+                mobyUser2.performMessageExchange(mobyUser1, dosNumber);
             }
         }
 
@@ -551,4 +529,97 @@ class MobyMessage {
         return this.delivered;
     }
     // Use this to store delivered information?
+}
+
+class MobyUser {
+    private int uid; // Unique ID for each user in the simulation.
+    private HashMap<Integer, Double> messageQueue; // Message queue for this user.
+    private BitSet messageQueueBits;
+    private BitSet dosQueueBits = null;
+    private int queueSize = 0;
+
+    public MobyUser(int userID, int queueSize, int dosNumber, int messageQueueSize, int dosQueueSize) {
+        this.uid = userID;
+        this.queueSize = queueSize;
+        this.messageQueue = new HashMap<>();
+        this.messageQueueBits = new BitSet(messageQueueSize);
+        if (dosQueueSize > 0)
+            this.dosQueueBits = new BitSet(dosQueueSize);
+    }
+
+    public BitSet getMessageQueueDifference(MobyUser mobyUser) {
+        BitSet difference = this.getMessageQueueBitsClone(); // Copy my own bitset.
+        difference.or(mobyUser.getMessageQueueBits()); // Calculate union of two bitsets.
+        difference.andNot(this.messageQueueBits); // Union of bitsets - my bitset.
+        return difference;
+    }
+
+    public BitSet getDosQueueBits() {
+        return this.dosQueueBits;
+    }
+
+    public BitSet getMessageQueueBitsClone() {
+        return (BitSet) this.messageQueueBits.clone();
+    }
+
+    public BitSet getMessageQueueBits() {
+        return this.messageQueueBits;
+    }
+
+    public int getFreeSpace(int dosNumber) {
+        if(dosNumber > 0)
+            return this.queueSize - (this.messageQueueBits.cardinality() + (this.dosQueueBits.cardinality() * dosNumber));
+        return this.queueSize - this.messageQueueBits.cardinality();
+    }
+
+    public int getQueueOccupancy(int dosNumber) {
+        if(dosNumber > 0)
+            return this.messageQueueBits.cardinality() + (this.dosQueueBits.cardinality() * dosNumber);
+        return this.messageQueueBits.cardinality();
+    }
+
+    public void dropDos(int index) {
+        this.dosQueueBits.clear(0, index);
+    }
+
+    public void addMessage(int messageID, double trust) {
+        this.messageQueue.put(messageID, trust);
+        this.messageQueueBits.set(messageID);
+    }
+
+    public boolean hasMessage(int messageID) {
+        return this.messageQueueBits.get(messageID);
+    }
+
+    public void deleteMessages(ArrayList<MobyMessage> messages) {
+        for(MobyMessage message : messages) {
+            this.messageQueueBits.clear(message.id);
+            this.messageQueue.remove(message.id);
+        }
+    }
+
+    public void orDos(BitSet s) {
+        this.dosQueueBits.or(s);
+    }
+
+    public HashMap<Integer, Double> getMessageQueue() {
+        return this.messageQueue;
+    }
+
+    public int getUID() { return this.uid; }
+
+    public double getUserTrust(int userID) { return 1.0; } // Return 1 for now, but implement trust lookup here.
+
+    public void performMessageExchange(MobyUser mobyUser, int dosNumber) {
+        BitSet newMessages = this.getMessageQueueDifference(mobyUser);
+        int freeSpace = this.getFreeSpace(dosNumber);
+        HashMap<Integer, Double> mobyUserMessages = mobyUser.getMessageQueue();
+        double trust = this.getUserTrust(mobyUser.getUID());
+
+        for(int bitIndex = newMessages.nextSetBit(0); bitIndex >= 0 && freeSpace > 0 ; bitIndex = newMessages.nextSetBit(bitIndex+1)) {
+            this.messageQueue.put(bitIndex, mobyUserMessages.get(bitIndex) * trust);
+            this.messageQueueBits.set(bitIndex);
+            freeSpace -= 1;
+        }
+    }
 }
