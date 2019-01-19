@@ -45,6 +45,7 @@ def main():
     parser.add_argument('--jam-user-logic', help='The logic used to pick users to jam.', type=int, nargs='?', default=0)
     parser.add_argument('--slack-hook', help='Webhook for slack signaling.', type=str, nargs='?', default="")
     parser.add_argument('--trust-scores', help='Trust score file to be used.', type=str, nargs='?', default="")
+    parser.add_argument('--trust-simulation', help='Flag to know if sim is a trust sim.', type=bool, nargs='?', default=False)
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
     start_day = args.start_day
@@ -68,11 +69,15 @@ def main():
     jam_user_list = []
     slack_hook = args.slack_hook
     trust_scores = args.trust_scores
+    trust_simulation = args.trust_simulation
     trust_file = DATA_FILE_PREFIX + trust_scores + JSON
+    contacts = {}
     with open(trust_file) as scores_file:
-        contacts = json.load(scores_file)
-        contacts = contacts["users"]
-        print("Done loading contact list", len(contacts))
+        temp = json.load(scores_file)
+        temp = temp["users"]
+    for i in temp:
+        contacts.update(i)
+    print("Done loading contact list", len(contacts))
     total_hours = (end_day - start_day) * 24
     message_sending_hours = total_hours - cooldown
     h = 0
@@ -128,6 +133,7 @@ def main():
     config["slack-hook"] = slack_hook
     config["cooldown"] = cooldown
     config["trust-scores"] = trust_scores
+    config["trust-simulation"] = trust_simulation
     random.seed(seed)
     if jam_tower > 0:
         print("Generating jammed towers list.")
@@ -162,19 +168,31 @@ def main():
     # Reseeding for message generation to comply with previously run simulations.
     random.seed(seed)
     id_counter = 0
+    miss_ctr = 0
+    empty_ctr = 0
     messages = []
     userpool_keys = sorted(userpool.keys())
     for hour in range(message_sending_hours):
         message_number = distribution[hour]
-        users_to_sample = users_to_consider[hour].intersection(userpool_keys)
+        users_to_sample = sorted(users_to_consider[hour].intersection(userpool_keys))
         for i in range(int(math.ceil(message_number))):
             message = {}
             message["hour"] = hour
             message["id"] = id_counter
             # Don't use the message_generation_type flag for now, maybe need it in the future.
             # if message_generation_type == 1:
-            src, dst = random.sample(users_to_sample, 2)
+            src = random.sample(users_to_sample, 1)[0]
             message["src"] = src
+            if src in contacts:
+                dst_set = sorted(set(users_to_sample).intersection(contacts[src]))
+                if len(dst_set) == 0:
+                    empty_ctr += 1
+                    dst = random.sample(users_to_sample, 1)[0]
+                else:
+                    dst = random.sample(dst_set, 1)[0]
+            else:
+                dst = random.sample(users_to_sample, 1)[0]
+                miss_ctr += 1
             message["dst"] = dst
             message["ttl"] = time_to_live
             message["hop"] = 0
@@ -182,6 +200,7 @@ def main():
             messages.append(message)
             id_counter += 1
     config["messages"] = messages
+    print("Missed:", miss_ctr, "Empty:", empty_ctr)
     with open(current_message_file, "w+") as outfile:
         json.dump(config, outfile)
     print("Message generation complete and written to file:", current_message_file)
@@ -227,6 +246,14 @@ def get_message_distribution(sending_hours, total_messages, dist_type, start, en
             scaling = float(smscounter[i]) / smstotal
             dictionary[i] = int(math.ceil(scaling * total_messages))
             tot += dictionary[i]
+        remaining = total_messages - tot
+        i = 0
+        while remaining > 0:
+            dictionary[i] += 1
+            remaining -= 1
+            i += 1
+            i %= sending_hours
+            tot += 1
         print("Total messages:", tot)
         return dictionary
 
