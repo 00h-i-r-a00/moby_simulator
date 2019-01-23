@@ -175,7 +175,8 @@ def main():
     for hour in range(message_sending_hours):
         message_number = distribution[hour]
         users_to_sample = sorted(users_to_consider[hour].intersection(userpool_keys))
-        for i in range(int(math.ceil(message_number))):
+        i = 0
+        while i < int(math.ceil(message_number)):
             message = {}
             message["hour"] = hour
             message["id"] = id_counter
@@ -187,17 +188,18 @@ def main():
                 dst_set = sorted(set(users_to_sample).intersection(contacts[src]))
                 if len(dst_set) == 0:
                     empty_ctr += 1
-                    dst = random.sample(users_to_sample, 1)[0]
+                    continue # Skip this src user.
                 else:
                     dst = random.sample(dst_set, 1)[0]
             else:
-                dst = random.sample(users_to_sample, 1)[0]
                 miss_ctr += 1
+                continue # Skip this src user.
             message["dst"] = dst
             message["ttl"] = time_to_live
             message["hop"] = 0
             message["trust"] = 1
             messages.append(message)
+            i += 1
             id_counter += 1
     config["messages"] = messages
     print("Missed:", miss_ctr, "Empty:", empty_ctr)
