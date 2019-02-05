@@ -46,6 +46,7 @@ def main():
     parser.add_argument('--slack-hook', help='Webhook for slack signaling.', type=str, nargs='?', default="")
     parser.add_argument('--trust-scores', help='Trust score file to be used.', type=str, nargs='?', default="")
     parser.add_argument('--trust-simulation', help='Flag to know if sim is a trust sim.', type=bool, nargs='?', default=False)
+    parser.add_argument('--contact-list', help='Contact list to be used for message generation.', type=str, nargs='?', default="")
     args = parser.parse_args(sys.argv[1:])
     number_of_messages = args.number
     start_day = args.start_day
@@ -70,9 +71,10 @@ def main():
     slack_hook = args.slack_hook
     trust_scores = args.trust_scores
     trust_simulation = args.trust_simulation
-    trust_file = DATA_FILE_PREFIX + trust_scores + JSON
+    contact_list = args.contact_list
+    contacts_file = DATA_FILE_PREFIX + contact_list + JSON
     contacts = {}
-    with open(trust_file) as scores_file:
+    with open(contacts_file) as scores_file:
         temp = json.load(scores_file)
         temp = temp["users"]
     for i in temp:
