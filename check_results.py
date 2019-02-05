@@ -33,7 +33,7 @@ def main():
             results = [RESULTS_DIR + configuration + i for i in [RESULTS_EXT, MESSAGE_DELAYS_EXT, QUEUE_OCCUPANCY_EXT]]
             for result_file in results:
                 if not os.path.exists(result_file):
-                    incomplete[achtung].append(configuration[15:])
+                    incomplete[achtung].append(configuration)
                     break
     total = 0
     for k in incomplete.keys():
