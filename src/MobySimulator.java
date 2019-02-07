@@ -11,7 +11,6 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
-import java.lang.Math;
 
 public class MobySimulator {
 
@@ -23,13 +22,16 @@ public class MobySimulator {
     private static final String RESULT_FILE_FORMAT = ".csv";
     private static final String QUEUE_OCCUPANCY_FORMAT = ".qo";
     private static final String MESSAGE_DELAYS_FORMAT = ".md";
+    private static final String TRUST_SCORE_FILE_FORMAT = ".json";
 
 
-    private static HashMap<Integer, Set<Integer>> networkStateNew = null;
+    private static HashMap<Integer, List<Integer>> networkStateNew = null;
     private static ArrayList<Integer> allTowers = new ArrayList<>();
     private static int timeToLive = 0;
     private static int dosBitsSize;
     private static int dosNumber;
+    private static double dosTrust;
+    private static boolean trustSimulation;
 
     private static HashMap<Integer, MobyUser> mobyUserHashMap = new HashMap<>();
 
@@ -72,7 +74,7 @@ public class MobySimulator {
         int currentDay;
         int currentHour;
         ArrayList<Integer> integerArrayList;
-        HashMap<Integer, Set<Integer>> networkStateOld = null;
+        HashMap<Integer, List<Integer>> networkStateOld = null;
         String currentDataFile;
         boolean firstHour;
         Scanner scanner = null;
@@ -81,8 +83,8 @@ public class MobySimulator {
         int hour;
         int towerID;
         String userIDs;
-        Set<Integer> userSet;
-        Set<Integer> currentHourUsers;
+        List<Integer> userSet;
+        List<Integer> currentHourUsers;
         int userCounter;
         int simulationHour;
         int messagesInCirculation = 0;
@@ -96,19 +98,6 @@ public class MobySimulator {
         } catch(ArrayIndexOutOfBoundsException e) {
             System.out.println("Please pass a configuration ID!!");
             return;
-        }
-
-        // Load trust scores from file.
-        if(!trustScoreFile.isEmpty()) {
-            try {
-                JsonObject trustScoreJson = jsonParser.parse(new FileReader(trustScoreFile)).getAsJsonObject();
-                jsonArray = trustScoreJson.getAsJsonArray("users");
-                System.out.println("Got trust scores for: " + jsonArray.size());
-                return;
-            } catch (FileNotFoundException e) {
-                System.out.println("Invalid trust score file supplied!!");
-                return;
-            }
         }
 
         // Build all input output filenames.
@@ -143,7 +132,8 @@ public class MobySimulator {
         numberOfDays = endDay - startDay;
         slackHook = configurationJson.get("slack-hook").getAsString();
         cooldownHours = configurationJson.get("cooldown").getAsInt();
-        trustScoreFile = configurationJson.get("trust-scores").getAsString();
+        trustScoreFile = DATA_FILE_PREFIX + configurationJson.get("trust-scores").getAsString() + TRUST_SCORE_FILE_FORMAT;
+        trustSimulation = configurationJson.get("trust-simulation").getAsBoolean();
 
 
         // Convert messages to our own objects.
@@ -160,7 +150,7 @@ public class MobySimulator {
                     jsonObject.get("src").getAsInt(),
                     jsonObject.get("dst").getAsInt(),
                     jsonObject.get("hour").getAsInt(),
-                    jsonObject.get("trust").getAsDouble()
+                    1.0
             ));
         }
 
@@ -200,6 +190,36 @@ public class MobySimulator {
             mobyUserHashMap.put(user, mobyUser);
         }
 
+        // Load trust scores from file.
+        if(!trustScoreFile.isEmpty() && trustSimulation) {
+            try {
+                JsonObject trustScoreJson = jsonParser.parse(new FileReader(trustScoreFile)).getAsJsonObject();
+                jsonArray = trustScoreJson.getAsJsonArray("users");
+                System.out.println("Got trust scores for: " + jsonArray.size());
+                JsonObject element;
+                JsonArray trustedArray;
+                MobyUser mobyUser;
+                int user;
+                for(i = 0; i < jsonArray.size(); i++) {
+                    element = jsonArray.get(i).getAsJsonObject();
+                    user = Integer.parseInt((String)element.keySet().toArray()[0]);
+                    mobyUser = mobyUserHashMap.get(user);
+                    if(mobyUser == null)
+                        continue;
+                    trustedArray = element.getAsJsonArray("" + user);
+                    for(j = 0; j < trustedArray.size(); j++) {
+                        mobyUser.setUserTrust(trustedArray.get(j).getAsInt(), 1.0);
+                    }
+                }
+                dosTrust = 0.0;
+            } catch (FileNotFoundException e) {
+                System.out.println("Invalid trust score file supplied!!");
+                return;
+            }
+        } else {
+            dosTrust = 0.0;
+        }
+
         // Parse towers file and get all information.
         networkStateOld = new HashMap<>();
 
@@ -215,7 +235,7 @@ public class MobySimulator {
             // For the hours of a day.
             for(currentHour = 0; currentHour < 24; currentHour++) {
                 networkStateNew = new HashMap<>();
-                currentHourUsers = new HashSet<>();
+                currentHourUsers = new ArrayList<>();
                 simulationHour = currentHour + (24 * (currentDay - startDay));
 
                 if(threshold==0)
@@ -245,7 +265,7 @@ public class MobySimulator {
                     hour = Integer.parseInt(parts[0]);
                     towerID = Integer.parseInt(parts[1]);
                     userIDs = parts[2];
-                    userSet = new HashSet<>();
+                    userSet = new ArrayList<>();
 
                     for (String user : userIDs.split("\\|")) {
                         userSet.add(Integer.parseInt(user));
@@ -303,26 +323,40 @@ public class MobySimulator {
                 // Write delivery ratio.
                 try {
                     resultsFileBuffer.write(
-                                currentDay + "," +
+                            currentDay + "," +
                                     currentHour + "," +
                                     currentHourUsers.size() + "," +
                                     messageDelays.size() + "," +
-                                    messagesInCirculation + '\n');
+                                    messagesInCirculation + "," +
+                                    timeToLive + "," +
+                                    queueSize + "," +
+                                    dosNumber + "," +
+                                    trustSimulation + "," +
+                                    trustScoreFile + "," +
+                                    seed + "," +
+                                    threshold + '\n');
                 } catch (IOException e) {
                     System.out.println("Problem writing delivery ratios!!");
                 }
 
                 // Write queue occupancy.
                 try {
+                    int totalDosMessages = 0;
+                    int totalNonDos = 0;
+                    MobyUser mobyUser;
                     for(int user : currentHourUsers) {
+                        mobyUser = mobyUserHashMap.get(user);
+                        totalDosMessages += (mobyUser.getDosSetSize() * dosNumber);
+                        totalNonDos += mobyUser.getQueueOccupancy(0);
                         queueOccupancyFileBuffer.write(
                                 currentDay + "," +
                                         currentHour + "," +
                                         user + "," +
-                                        mobyUserHashMap.get(user).getQueueOccupancy(dosNumber) + '\n');
+                                        mobyUser.getQueueOccupancy(dosNumber) + '\n');
                     }
                     // Don't think I really need this anywhere. Might be expensive computing it.
-                    // System.out.println("Avg. DOS occupancy: " + totalDosMsgs/currentHourUsers.size());
+                    System.out.println("Avg. DOS occupancy: " + totalDosMessages/currentHourUsers.size());
+                    System.out.println("Avg. Non Dos occupancy: " + totalNonDos/currentHourUsers.size());
                 } catch (IOException e) {
                     System.out.println("Problem writing queue occupancies!!");
                 }
@@ -343,11 +377,17 @@ public class MobySimulator {
                     messageList.remove(m);
                 }
 
+                int canParticipate = 0;
+
                 for(Map.Entry<Integer, MobyUser> userEntry : mobyUserHashMap.entrySet()) {
                     userEntry.getValue().deleteMessages(deleteList);
+                    if(simulationHour > timeToLive) {
+                        int clearIndex = ((allTowers.size()) * (simulationHour - timeToLive));
+                        clearIndex -= 1;
+                        userEntry.getValue().dropDos(clearIndex);
+                    }
                 }
 
-                // TODO: Test to see what happens if we manually trigger GC after these deletes.
                 networkStateOld = networkStateNew;
                 // Do next hour.
             }
@@ -377,7 +417,8 @@ public class MobySimulator {
         }
 
         // Simulation done, send message to slack.
-        sendSlackMessage(slackHook, "Simulation " + configID + " done.");
+        String msg = "Simulation ttl: " + timeToLive + ", dosNumber: " + dosNumber + ", delivery ratio: " + ((float)messageDelays.size() / messagesInCirculation) + ", config: " + configID;
+        sendSlackMessage(slackHook, msg);
 
     }
 
@@ -413,88 +454,38 @@ public class MobySimulator {
 
         System.out.println("Sim hour: " + simulationHour + " TTL: " + timeToLive);
 
-        // Dos stuff if it's a Dos sim.
-        if(dosNumber > 0 ) {
+        int dosIDForHour = -1;
 
-            // First delete old Dos Messages.
-            if (simulationHour > timeToLive) {
-                for (int tower : towerIDs) {
-                    int clearIndex = ((allTowers.size()) * (simulationHour - timeToLive));
-                    clearIndex -= 1;
-                    for (int u : networkStateNew.get(tower))
-                        mobyUserHashMap.get(u).dropDos(clearIndex);
-                }
-            }
-
-            // Then perform Dos Exchanges.
-            for (int tower : towerIDs)
-                performDosExchange(networkStateNew.get(tower), tower, simulationHour, queueSize);
-        }
-
+        System.out.println("Performing exchange 1 way");
         // Perform exchanges one way.
-        for(int tower : towerIDs)
-            performMessageExchange(networkStateNew.get(tower));
+        for(int tower : towerIDs) {
+            if(dosNumber > 0)
+                dosIDForHour = (allTowers.size() * simulationHour) + allTowers.indexOf(tower);
+            performMessageExchange(networkStateNew.get(tower), dosIDForHour);
+        }
 
         // Reverse tower order.
         Collections.reverse(towerIDs);
 
+        System.out.println("Performing exchange other way");
         // Perform exchanges the other way.
-        for(int tower : towerIDs)
-            performMessageExchange(networkStateNew.get(tower));
-
-    }
-
-    private static void performDosExchange(Set<Integer> users, int tower, int simulationHour, int queueSize) {
-        // Scaling one bit of dos queue to be equal to N messages
-        // all dos messages for an hour = number of towers = towerSizeX
-        // DosMQ = {towerSize0, towerSize1, towerSize2 ... towerSizeN}
-        // each bit here represents dosNumber of dos messages. Hence scale cardinality with dosNumber.
-        int dosIDBase = (allTowers.size() * simulationHour) + allTowers.indexOf(tower);
-        int freeSpace;
-        BitSet allDosMessages = new BitSet(dosBitsSize);
-        BitSet userDosSet;
-        for(int u : users) {
-            allDosMessages.or(mobyUserHashMap.get(u).getDosQueueBits());
-        }
-        allDosMessages.set(dosIDBase);
-        // DoS for tower for that time.
-        for(int u : users) {
-            // Overflow for now?
-            MobyUser mobyUser = mobyUserHashMap.get(u);
-
-            freeSpace = mobyUser.getFreeSpace(dosNumber);
-
-            userDosSet = (BitSet) allDosMessages.clone();
-            userDosSet.andNot(mobyUser.getDosQueueBits());
-
-            // Compute how many of the new dosSet messages we can accommodate.
-            if(freeSpace < (userDosSet.cardinality() * dosNumber)) {
-                int clearIndex = userDosSet.previousSetBit(dosBitsSize);
-                while (freeSpace > 0) {
-                    freeSpace -= dosNumber;
-                    if(clearIndex < 0) {
-                        clearIndex = 0;
-                        break;
-                    }
-                }
-                userDosSet.clear(0, clearIndex);
-            }
-
-            mobyUser.orDos(userDosSet);
+        for(int tower : towerIDs) {
+            if(dosNumber > 0)
+                dosIDForHour = (allTowers.size() * simulationHour) + allTowers.indexOf(tower);
+            performMessageExchange(networkStateNew.get(tower), dosIDForHour);
         }
     }
 
     // Perform message exchange in tower
-    private static void performMessageExchange(Set<Integer> users){
+    private static void performMessageExchange(List<Integer> users, int dosIDForHour){
         // For all pairs of users, send messages from one queue to the other with queue constraints in mind.
         MobyUser mobyUser1, mobyUser2;
+        Collections.sort(users);
         for (int u1 : users) {
+            mobyUser1 = mobyUserHashMap.get(u1);
             for (int u2 : users) {
-                mobyUser1 = mobyUserHashMap.get(u1);
                 mobyUser2 = mobyUserHashMap.get(u2);
-
-                mobyUser1.performMessageExchange(mobyUser2, dosNumber);
-                mobyUser2.performMessageExchange(mobyUser1, dosNumber);
+                mobyUser1.performMessageExchange(mobyUser2, dosNumber, dosIDForHour);
             }
         }
 
@@ -509,6 +500,7 @@ class MobyMessage {
     int hour;
     double trust;
     private boolean delivered;
+
 
     public MobyMessage(int identifier, int timeToLive, int source, int destination,
                        int hourSent, double trustScore) {
@@ -534,9 +526,11 @@ class MobyMessage {
 class MobyUser {
     private int uid; // Unique ID for each user in the simulation.
     private HashMap<Integer, Double> messageQueue; // Message queue for this user.
+    private HashMap<Integer, Double> trustScores;
     private BitSet messageQueueBits;
     private BitSet dosQueueBits = null;
     private int queueSize = 0;
+    private Random random;
 
     public MobyUser(int userID, int queueSize, int dosNumber, int messageQueueSize, int dosQueueSize) {
         this.uid = userID;
@@ -545,12 +539,22 @@ class MobyUser {
         this.messageQueueBits = new BitSet(messageQueueSize);
         if (dosQueueSize > 0)
             this.dosQueueBits = new BitSet(dosQueueSize);
+        trustScores = new HashMap<Integer, Double>();
+        this.random = new Random(userID);
     }
 
     public BitSet getMessageQueueDifference(MobyUser mobyUser) {
         BitSet difference = this.getMessageQueueBitsClone(); // Copy my own bitset.
         difference.or(mobyUser.getMessageQueueBits()); // Calculate union of two bitsets.
         difference.andNot(this.messageQueueBits); // Union of bitsets - my bitset.
+
+        return difference;
+    }
+
+    public BitSet getDosQueueDifference(MobyUser mobyUser) {
+        BitSet difference = (BitSet) this.dosQueueBits.clone();
+        difference.or(mobyUser.getDosQueueBits());
+        difference.andNot(this.dosQueueBits);
         return difference;
     }
 
@@ -598,28 +602,79 @@ class MobyUser {
         }
     }
 
-    public void orDos(BitSet s) {
-        this.dosQueueBits.or(s);
-    }
-
     public HashMap<Integer, Double> getMessageQueue() {
         return this.messageQueue;
     }
 
     public int getUID() { return this.uid; }
 
-    public double getUserTrust(int userID) { return 1.0; } // Return 1 for now, but implement trust lookup here.
+    public void setUserTrust(int userID, double trust) { this.trustScores.put(userID, trust); }
 
-    public void performMessageExchange(MobyUser mobyUser, int dosNumber) {
-        BitSet newMessages = this.getMessageQueueDifference(mobyUser);
-        int freeSpace = this.getFreeSpace(dosNumber);
-        HashMap<Integer, Double> mobyUserMessages = mobyUser.getMessageQueue();
+    public double getUserTrust(int userID) { return this.trustScores.getOrDefault(userID, 0.0); } // Return 1 for now, but implement trust lookup here.
+
+    public void performMessageExchange(MobyUser mobyUser, int dosNumber, int dosIDForHour) {
         double trust = this.getUserTrust(mobyUser.getUID());
+        if(trust == 0)
+            return;
+        BitSet newMessages = this.getMessageQueueDifference(mobyUser);
+        BitSet newDosMessages = this.getDosQueueDifference(mobyUser);
+        HashMap<Integer, Double> mobyUserMessages = mobyUser.getMessageQueue();
 
-        for(int bitIndex = newMessages.nextSetBit(0); bitIndex >= 0 && freeSpace > 0 ; bitIndex = newMessages.nextSetBit(bitIndex+1)) {
+        // Exchange MQ
+        for(int bitIndex = newMessages.nextSetBit(0);
+            bitIndex != -1;
+            bitIndex = newMessages.nextSetBit(bitIndex + 1)) {
+            // My trust = other user's trust * trust in them.
             this.messageQueue.put(bitIndex, mobyUserMessages.get(bitIndex) * trust);
             this.messageQueueBits.set(bitIndex);
-            freeSpace -= 1;
+        }
+
+        // Not a Dos Sim!
+        if(dosIDForHour == -1){
+            this.performRandomDrop(dosNumber);
+            return;
+        }
+
+        this.dosQueueBits.set(dosIDForHour);
+        // Exchange DosQueue
+        for(int bitIndex = newDosMessages.nextSetBit(0);
+        bitIndex != -1;
+        bitIndex = newDosMessages.nextSetBit(bitIndex + 1)) {
+            this.dosQueueBits.set(bitIndex);
+        }
+
+        this.performRandomDrop(dosNumber);
+    }
+
+
+    public void performRandomDrop(int dosNumber) {
+        //
+        int freeSpace = this.getFreeSpace(dosNumber);
+
+        if (freeSpace >= 0)
+            return;
+
+        freeSpace *= -1;
+        int drop;
+        double dosProb;
+        while (freeSpace > 0) {
+            dosProb = ((double) (dosQueueBits.cardinality() * dosNumber)) / ((dosQueueBits.cardinality() * dosNumber) + messageQueueBits.cardinality());
+            if (random.nextDouble() > dosProb) {
+                freeSpace -= 1;
+                drop = messageQueueBits.nextSetBit(0);
+                messageQueueBits.clear(drop);
+                messageQueue.remove(drop);
+            } else {
+                freeSpace -= dosNumber;
+                drop = dosQueueBits.nextSetBit(0);
+                dosQueueBits.clear(drop);
+            }
         }
     }
+
+
+    public int getDosSetSize() { return this.dosQueueBits.cardinality(); }
+
+
+
 }
