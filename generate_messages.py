@@ -175,6 +175,7 @@ def main():
     id_counter = 0
     miss_ctr = 0
     empty_ctr = 0
+    same_ctr = 0
     messages = []
     userpool_keys = sorted(userpool.keys())
     for hour in range(message_sending_hours):
@@ -196,6 +197,9 @@ def main():
                     continue # Skip this src user.
                 else:
                     dst = random.sample(dst_set, 1)[0]
+                    if dst == src:
+                        same_ctr += 1
+                        continue # Skip this src = dst case.
             else:
                 miss_ctr += 1
                 continue # Skip this src user.
@@ -207,7 +211,7 @@ def main():
             i += 1
             id_counter += 1
     config["messages"] = messages
-    print("Missed:", miss_ctr, "Empty:", empty_ctr)
+    print("Missed:", miss_ctr, "Empty:", empty_ctr, "Same ctr:", same_ctr)
     with open(current_message_file, "w+") as outfile:
         json.dump(config, outfile)
     print("Message generation complete and written to file:", current_message_file)
