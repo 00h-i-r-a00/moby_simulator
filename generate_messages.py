@@ -136,7 +136,7 @@ def main():
     config["jam-tower-logic"] = jam_tower_logic
     config["slack-hook"] = slack_hook
     config["cooldown"] = cooldown
-    config["trust-scores"] = trust_scores
+    config["contact-list"] = trust_scores
     config["trust-simulation"] = trust_simulation
     config["trust-hop-count"] = trust_hop_count
     random.seed(seed)
