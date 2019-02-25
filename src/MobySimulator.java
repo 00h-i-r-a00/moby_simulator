@@ -483,9 +483,10 @@ public class MobySimulator {
         Collections.sort(users);
         for (int u1 : users) {
             mobyUser1 = mobyUserHashMap.get(u1);
+            mobyUser1.performDosExchangeForHour(dosIDForHour, dosNumber);
             for (int u2 : users) {
                 mobyUser2 = mobyUserHashMap.get(u2);
-                mobyUser1.performMessageExchange(mobyUser2, dosNumber, dosIDForHour);
+                mobyUser1.performMessageExchangeTailDrop(mobyUser2, dosNumber, dosIDForHour);
             }
         }
 
@@ -612,7 +613,41 @@ class MobyUser {
 
     public double getUserTrust(int userID) { return this.trustScores.getOrDefault(userID, 0.0); } // Return 1 for now, but implement trust lookup here.
 
-    public void performMessageExchange(MobyUser mobyUser, int dosNumber, int dosIDForHour) {
+    public void performDosExchangeForHour(int dosIDForHour, int dosNumber) {
+        int freeSpace = this.getFreeSpace(dosNumber);
+        if (freeSpace > 0)
+            this.dosQueueBits.set(dosIDForHour);
+    }
+
+    public void performMessageExchangeTailDrop(MobyUser mobyUser, int dosNumber, int dosIDForHour) {
+        BitSet newMessages = this.getMessageQueueDifference(mobyUser);
+        int freeSpace = this.getFreeSpace(dosNumber);
+        HashMap<Integer, Double> mobyUserMessages = mobyUser.getMessageQueue();
+        double trust = this.getUserTrust(mobyUser.getUID());
+
+        // Dos Sim!
+        if(dosIDForHour != -1) {
+            // First exchange dos messages, as many as we have space to accomodate.
+            BitSet newDosMessages = this.getDosQueueDifference(mobyUser);
+            for(int bitIndex = newDosMessages.nextSetBit(0);
+                bitIndex != -1 && freeSpace > 0; // Try filling queue as much as possible.
+                bitIndex = newDosMessages.nextSetBit(bitIndex)) {
+                this.dosQueueBits.set(bitIndex);
+                freeSpace -= dosNumber;
+            }
+        }
+
+        // Now handle new legit messages.
+        for(int bitIndex = newMessages.nextSetBit(0);
+            bitIndex >= 0 && freeSpace > 0 ; bitIndex = newMessages.nextSetBit(bitIndex+1)) {
+            this.messageQueue.put(bitIndex, mobyUserMessages.get(bitIndex) * trust);
+            this.messageQueueBits.set(bitIndex);
+            freeSpace -= 1;
+        }
+
+    }
+
+    public void performMessageExchangeRandomDrop(MobyUser mobyUser, int dosNumber, int dosIDForHour) {
         double trust = this.getUserTrust(mobyUser.getUID());
         if(trust == 0)
             return;
@@ -635,7 +670,6 @@ class MobyUser {
             return;
         }
 
-        this.dosQueueBits.set(dosIDForHour);
         // Exchange DosQueue
         for(int bitIndex = newDosMessages.nextSetBit(0);
         bitIndex != -1;
