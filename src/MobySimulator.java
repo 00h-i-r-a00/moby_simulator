@@ -334,7 +334,8 @@ public class MobySimulator {
                                     trustSimulation + "," +
                                     trustScoreFile + "," +
                                     seed + "," +
-                                    threshold + '\n');
+                                    threshold + "," +
+                                    configID + '\n');
                 } catch (IOException e) {
                     System.out.println("Problem writing delivery ratios!!");
                 }
