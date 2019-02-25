@@ -616,7 +616,7 @@ class MobyUser {
 
     public void performDosExchangeForHour(int dosIDForHour, int dosNumber) {
         int freeSpace = this.getFreeSpace(dosNumber);
-        if (freeSpace > 0)
+        if (freeSpace > 0 && dosIDForHour != -1)
             this.dosQueueBits.set(dosIDForHour);
     }
 
