@@ -624,7 +624,6 @@ class MobyUser {
         BitSet newMessages = this.getMessageQueueDifference(mobyUser);
         int freeSpace = this.getFreeSpace(dosNumber);
         HashMap<Integer, Double> mobyUserMessages = mobyUser.getMessageQueue();
-        double trust = this.getUserTrust(mobyUser.getUID());
 
         // Dos Sim!
         if(dosIDForHour != -1) {
@@ -641,7 +640,6 @@ class MobyUser {
         // Now handle new legit messages.
         for(int bitIndex = newMessages.nextSetBit(0);
             bitIndex >= 0 && freeSpace > 0 ; bitIndex = newMessages.nextSetBit(bitIndex+1)) {
-            this.messageQueue.put(bitIndex, mobyUserMessages.get(bitIndex) * trust);
             this.messageQueueBits.set(bitIndex);
             freeSpace -= 1;
         }
