@@ -3,6 +3,7 @@ import argparse
 import os
 import sys
 import json
+import statistics
 
 SEEDS_DIR = "data/seeds/"
 LOGS_DIR = "data/logs/"
@@ -24,6 +25,7 @@ def main():
     logs = os.listdir(LOGS_DIR)
     logs = list(filter(lambda e: e.startswith(conf), logs))
     print("Working on", len(confs), "configurations for run number:", conf)
+    print(logs)
     if len(logs) != len(confs):
         print("Incomplete configuration :/ logs:", len(logs), " confs:", len(confs))
         return
@@ -31,17 +33,20 @@ def main():
         with open(SEEDS_DIR + sim + ".config") as inp:
             conf_params = json.load(inp)
         ttl = conf_params["messages"][0]["ttl"]
+        del conf_params["messages"]
+        del conf_params["userpool"]
+        del conf_params["all-towers"]
         threshold = conf_params["threshold"]
-        lat_ctr = 0
-        msg_ctr = 0
+        queuesize = conf_params["queuesize"]
+        lat_lst = []
         with open(LOGS_DIR + sim + ".nohup") as inp:
             for line in inp:
                 if "Delay:" in line:
                     latency = int(line.split("Delay:")[1])
-                    lat_ctr += latency
-                    msg_ctr += 1
-        avg_lat = round(float(lat_ctr) / msg_ctr, 2)
-        print(getline(sim, threshold, ttl, avg_lat))
+                    lat_lst.append(latency)
+        stddev = statistics.stdev(lat_lst)
+        mean = statistics.mean(lat_lst)
+        print(getline(sim, queuesize, threshold, ttl, mean, stddev))
 
 def getline(*args):
     retstr = str(args[0])
