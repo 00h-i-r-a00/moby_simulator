@@ -158,10 +158,10 @@ def main():
         if jam_user_logic == 0:
             print("Logic for user jamming: Random. Jamming", jam_user, "users.")
             jam_user_list = random.sample(users_in_pool, jam_user)
-        elif jam_tower_logic == 1:
+        elif jam_user_logic == 1:
             print("Logic for user jamming: Popularity oracle. Jamming", jam_user, "users.")
             # TODO: Parse popularity from comms files.
-        elif jam_tower_logic == 2:
+        elif jam_user_logic == 2:
             print("Logic for user jamming: Mobility oracle. Jamming", jam_user, "users.")
             for u in user_mobility.keys():
                 user_mobility[u] = len(set(user[u]))
