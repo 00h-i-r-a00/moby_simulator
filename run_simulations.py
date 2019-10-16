@@ -16,6 +16,7 @@ MESSAGE_DELAYS_EXT = '.md'
 QUEUE_OCCUPANCY_EXT = '.qo'
 
 def get_total_concurrent_processes():
+    return 1
     proc_meminfo_output = subprocess.check_output('cat /proc/meminfo', shell=True)
     total_mem = float(subprocess.check_output("vmstat -n -s | grep 'total memory' | awk '{print $1}'", shell=True))
     used_mem = subprocess.check_output("vmstat -n -s | grep 'used memory' | awk '{print $1}'", shell=True)
@@ -72,7 +73,7 @@ def main():
                 msg_gen_string += "--" + key + " " + str(value) + " "
             cnf_id = str(conf["configuration"])
             print(conf)
-            msg_gen_string += ' && java -cp bin/:jars/*:  MobySimulator ' + cnf_id + '" > data/logs/' + cnf_id + '.nohup &'
+            msg_gen_string += ' && java -Xmx180g -XX:+UseParallelGC -XX:-UseGCOverheadLimit -cp bin/:jars/*:  MobySimulator ' + cnf_id + '" > data/logs/' + cnf_id + '.nohup &'
             print (msg_gen_string)
             os.system(msg_gen_string)
         time.sleep(SLEEP_TIME)
