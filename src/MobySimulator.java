@@ -621,6 +621,9 @@ class MobyUser {
     }
 
     public void performMessageExchangeTailDrop(MobyUser mobyUser, int dosNumber, int dosIDForHour) {
+        double trust = this.getUserTrust(mobyUser.getUID());
+        if(trust == 0)
+            return;
         BitSet newMessages = this.getMessageQueueDifference(mobyUser);
         int freeSpace = this.getFreeSpace(dosNumber);
         HashMap<Integer, Double> mobyUserMessages = mobyUser.getMessageQueue();
