@@ -15,6 +15,8 @@ RESULTS_EXT = ".csv"
 MESSAGE_DELAYS_EXT = '.md'
 QUEUE_OCCUPANCY_EXT = '.qo'
 
+CONFIG_FILE = "config.json"
+
 def get_total_concurrent_processes():
     return 1
     proc_meminfo_output = subprocess.check_output('cat /proc/meminfo', shell=True)
@@ -31,10 +33,14 @@ def main():
     me = getpass.getuser()
     killswitch = "/home/" + me + '/killswitch'
     hostname = socket.gethostname()
-    print (hostname)
     results_stripped = []
-    with open (hostname+".json") as conf_file:
+    with open(CONFIG_FILE, "r") as conf_file:
         confs = json.load(conf_file)
+        if hostname in confs:
+            confs = confs[hostname]
+        else:
+            print("No config for", hostname, "in", CONFIG_FILE)
+            return
     for conf in confs:
         # Check if the results exist, if they do, skip to the next one!
         run = False
