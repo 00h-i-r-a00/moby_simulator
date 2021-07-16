@@ -37,7 +37,7 @@ dos_numbers = [0]
 # (% towers to jam, jamming logic)
 jamtower = [(0, 0)] # Different jamming scenarios.
 contact_lists = ["0hop1thresh"]
-trust_simulation = False
+trust_simulation = True
 trust_scores = ["2hop1thresh", "1hop1thresh"]
 slack_hook = ""
 
@@ -52,6 +52,7 @@ def main():
         if os.path.isfile(os.getcwd() + '/' + f + '.json'):
             os.remove(f + ".json")
 
+    global trust_scores
     if not trust_simulation:
         trust_scores = [""]
 
