@@ -22,7 +22,7 @@ achtungpool = itertools.cycle(achtungs)
 #YYYYMMDDHHMMSS
 run_number = dt.now().strftime("%Y%m%d%H%M%S")
 start_days = [53]
-number_of_days = [3, 4, 5]
+number_of_days = [3]
 cities = [0]
 cooldowns = [24]
 number_of_messages = [30000]
@@ -30,14 +30,14 @@ queuesizes = [0]
 seeds = [373523167]
 distributiontype = ['region_sms_based']
 ttls = [73]
-thresholds = [0, 2, 4, 6, 8, 10, 12]
+thresholds = [4]
 #infinite since we are intially taking an estimate of the possible PDRs
 max_number = 10 #max number of dos messages to send
 dos_numbers = [0]
 # (% towers to jam, jamming logic)
 jamtower = [(0, 0)] # Different jamming scenarios.
 contact_lists = ["0hop1thresh"]
-trust_simulation = True
+trust_simulation = False
 trust_scores = ["2hop1thresh", "1hop1thresh"]
 slack_hook = ""
 
@@ -93,7 +93,7 @@ def main():
         json.dump(achtung_dict, fp=outfile, sort_keys=True, indent=2)
 
     if input("Upload to achtung? 'y' to upload.") == 'y':
-        os.system("scp " + CONFIG_FILE + " achtung:moby_simulator/")
+        os.system("scp " + CONFIG_FILE + " achtung:moby/moby_simulator/")
         print("Upload complete...")
 
 if __name__ == "__main__":
