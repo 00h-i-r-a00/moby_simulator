@@ -35,6 +35,8 @@ public class MobySimulator {
 
     private static HashMap<Integer, MobyUser> mobyUserHashMap = new HashMap<>();
 
+    private static Random random;
+
     public static void main(String[] args){
 
         // Create all datastructures needed for simulation.
@@ -130,11 +132,18 @@ public class MobySimulator {
         jamUser = configurationJson.get("jam-user").getAsInt();
         jamUserLogic = configurationJson.get("jam-user-logic").getAsInt();
         numberOfDays = endDay - startDay;
-        slackHook = configurationJson.get("slack-hook").getAsString();
         cooldownHours = configurationJson.get("cooldown").getAsInt();
         trustScoreFile = DATA_FILE_PREFIX + configurationJson.get("trust-scores").getAsString() + TRUST_SCORE_FILE_FORMAT;
         trustSimulation = configurationJson.get("trust-simulation").getAsBoolean();
 
+        // Seed the random to make picking subsets in MX reproducible
+        random = new Random(seed);
+
+        try {
+            slackHook = configurationJson.get("slack-hook").getAsString();
+        } catch (java.lang.UnsupportedOperationException e) {
+            System.out.println("Slack hook missing, won't send messages!");
+        }
 
         // Convert messages to our own objects.
         jsonArray = configurationJson.get("messages").getAsJsonArray();
@@ -175,8 +184,10 @@ public class MobySimulator {
         }
 
         // Deal with default queue size.
-        if(queueSize == 0)
+        if(queueSize == 0) {
+            System.out.println("Default queuesize, using:" + messageList.size());
             queueSize = messageList.size();
+        }
 
         // Done with the configuration json!
         configurationJson = null;
@@ -285,6 +296,7 @@ public class MobySimulator {
                 // TODO: Might be a better way to do this than parse the entire list of messages.
                 for(MobyMessage m : messageList) {
                     if(m.hour == simulationHour) {
+                        // System.out.println("Source: " + mobyUserHashMap.get(m.src));
                         mobyUserHashMap.get(m.src).addMessage(m.id, 1.0);
                         messagesInCirculation += 1;
                     }
@@ -449,11 +461,36 @@ public class MobySimulator {
         }
     }
 
+    private static void partialMXHandler(List<Integer> towerIDs, int simulationHour,
+                                         int dosNumber, int queueSize) {
+        System.out.println("Sim hour:" + simulationHour + ", TTL:" + timeToLive +
+                ", Dos: " + dosNumber + ", QS: " + queueSize);
+
+        // Perform exchanges just one way.
+        for (int tower : towerIDs) {
+            List<Integer> usersInTower = networkStateNew.get(tower);
+            Collections.sort(usersInTower);
+            for (int u1 : usersInTower) {
+                for (int u2: usersInTower) {
+                    if (u1 == u2) continue;
+                    if (random.nextBoolean()) {
+                        MobyUser mobyUser1 = mobyUserHashMap.get(u1);
+                        MobyUser mobyUser2 = mobyUserHashMap.get(u2);
+
+                        mobyUser1.performMessageExchangeTailDrop(mobyUser2, dosNumber, -1);
+                        mobyUser2.performMessageExchangeTailDrop(mobyUser1, dosNumber, -1);
+                    }
+                }
+            }
+        }
+    }
+
     //Message exchange handler
     private static void messageExchangeHandler(List<Integer> towerIDs, int simulationHour,
                                         int dosNumber, int queueSize){
 
-        System.out.println("Sim hour: " + simulationHour + " TTL: " + timeToLive);
+        System.out.println("Sim hour:" + simulationHour + ", TTL:" + timeToLive +
+                ", Dos: " + dosNumber + ", QS: " + queueSize);
 
         int dosIDForHour = -1;
 
@@ -612,7 +649,8 @@ class MobyUser {
 
     public void setUserTrust(int userID, double trust) { this.trustScores.put(userID, trust); }
 
-    public double getUserTrust(int userID) { return this.trustScores.getOrDefault(userID, 0.0); } // Return 1 for now, but implement trust lookup here.
+    // Return 1 for now, but implement trust lookup here.
+    public double getUserTrust(int userID) { return this.trustScores.getOrDefault(userID, 1.0); }
 
     public void performDosExchangeForHour(int dosIDForHour, int dosNumber) {
         int freeSpace = this.getFreeSpace(dosNumber);
@@ -622,7 +660,7 @@ class MobyUser {
 
     public void performMessageExchangeTailDrop(MobyUser mobyUser, int dosNumber, int dosIDForHour) {
         double trust = this.getUserTrust(mobyUser.getUID());
-        if(trust == 0)
+        if (trust == 0)
             return;
         BitSet newMessages = this.getMessageQueueDifference(mobyUser);
         int freeSpace = this.getFreeSpace(dosNumber);
@@ -682,7 +720,6 @@ class MobyUser {
         this.performRandomDrop(dosNumber);
     }
 
-
     public void performRandomDrop(int dosNumber) {
         //
         int freeSpace = this.getFreeSpace(dosNumber);
@@ -708,9 +745,6 @@ class MobyUser {
         }
     }
 
-
     public int getDosSetSize() { return this.dosQueueBits.cardinality(); }
-
-
 
 }
