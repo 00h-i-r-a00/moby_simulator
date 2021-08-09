@@ -45,7 +45,7 @@ def main():
     parser.add_argument('--jam-user-logic', help='The logic used to pick users to jam.', type=int, nargs='?', default=0)
     parser.add_argument('--slack-hook', help='Webhook for slack signaling.', type=str, nargs='?', default="")
     parser.add_argument('--trust-scores', help='Trust score file to be used.', type=str, nargs='?', default="")
-    parser.add_argument('--trust-simulation', help='Flag to know if sim is a trust sim.', type=bool, nargs='?', default=False)
+    parser.add_argument('--trust-simulation', help='Flag to know if sim is a trust sim.', type=str, nargs='?', default=False)
     parser.add_argument('--contact-list', help='Contact list to be used for message generation.', type=str, nargs='?', default="")
     parser.add_argument('--trust-hop-count', help='Hops to trust.', type=int, nargs='?', default=0)
     args = parser.parse_args(sys.argv[1:])
@@ -71,9 +71,13 @@ def main():
     jam_user_list = []
     slack_hook = args.slack_hook
     trust_scores = args.trust_scores
-    trust_simulation = args.trust_simulation
     contact_list = args.contact_list
     trust_hop_count = args.trust_hop_count
+    if trust_simulation == "true" or trust_simulation == "True":
+        config["trust-simulation"] = True
+    else:
+        config["trust_simulation"] = False
+    trust_simulation = args.trust_simulation
     contacts_file = DATA_FILE_PREFIX + contact_list + JSON
     contacts = {}
     with open(contacts_file) as scores_file:
@@ -85,7 +89,7 @@ def main():
     total_hours = (end_day - start_day) * 24
     message_sending_hours = total_hours - cooldown
     h = 0
-    print(total_hours, message_sending_hours)
+    print("Total simulation hours:", total_hours, "Message sending hours:", message_sending_hours)
     for current_day in range(start_day, end_day):
         for current_hour in range(0,24):
             current_data_file = DATA_FILE_PREFIX + str(city) + "/" + str(current_day) + "_" + str(current_hour) + DATA_FILE_FORMAT
@@ -105,7 +109,7 @@ def main():
                         for u in users_this_hour:
                             user_mobility[u].append(tower_id)
             users_this_hour = set(users_this_hour)
-            for j in range(0, h):
+            for j in range(0, h + 1):
                 users_to_consider[j] = users_to_consider[j].union(users_this_hour)
             active_userpool_per_hour[h] = users_this_hour
             h += 1
@@ -180,7 +184,8 @@ def main():
     userpool_keys = sorted(userpool.keys())
     for hour in range(message_sending_hours):
         message_number = distribution[hour]
-        users_to_sample = sorted(users_to_consider[hour].intersection(userpool_keys))
+        users_to_sample = sorted(active_userpool_per_hour[hour].intersection(userpool_keys))
+        print(users_to_sample)
         i = 0
         while i < int(math.ceil(message_number)):
             message = {}
