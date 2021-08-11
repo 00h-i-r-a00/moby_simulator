@@ -63,9 +63,7 @@ def main():
     threshold = args.threshold
     time_to_live = args.ttl
     seed = args.seed
-    queuesize = args.queuesize
     distributiontype = args.distributiontype
-    dos_number = args.dos_number
     jam_tower = args.jam_tower
     jam_tower_logic = args.jam_tower_logic
     jam_tower_list = []
@@ -73,14 +71,16 @@ def main():
     jam_user_logic = args.jam_user_logic
     jam_user_list = []
     slack_hook = args.slack_hook
-    trust_scores = args.trust_scores
     contact_list = args.contact_list
-    trust_hop_count = args.trust_hop_count
+    
+    # Unused
+    # trust_hop_count = args.trust_hop_count
+
+    trust_simulation = args.trust_simulation
     if trust_simulation == "true" or trust_simulation == "True":
         config["trust-simulation"] = True
     else:
         config["trust_simulation"] = False
-    trust_simulation = args.trust_simulation
     contacts_file = DATA_FILE_PREFIX + contact_list + JSON
     contacts = {}
     with open(contacts_file) as scores_file:
@@ -135,17 +135,17 @@ def main():
     config["start-day"] = start_day
     config["end-day"] = end_day
     config["seed"] = seed
-    config["queuesize"] = queuesize
+    config["queuesize"] = args.queuesize
     config["distributiontype"] = distributiontype
     config["threshold"] = threshold
-    config["dos-number"] = dos_number
+    config["dos-number"] = args.dos_number
     config["jam-tower"] = jam_tower
     config["jam-tower-logic"] = jam_tower_logic
     config["slack-hook"] = slack_hook
     config["cooldown"] = cooldown
     config["contact-list"] = contact_list
     config["trust-simulation"] = trust_simulation
-    config["trust-scores"] = trust_scores
+    config["trust-scores"] = args.trust_scores
     config["exchange-probability"] = args.exchange_probability
     random.seed(seed)
     if jam_tower > 0:
