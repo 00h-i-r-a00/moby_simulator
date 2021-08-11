@@ -27,9 +27,9 @@ cities = [0]
 cooldowns = [24]
 number_of_messages = [30000]
 queuesizes = [0]
-seeds = [373523167]
+seeds = [373523167, 1875857264, 877861538]
 distributiontype = ['region_sms_based']
-ttls = [73]
+ttls = [12, 24, 36, 48, 60, 72]
 thresholds = [4]
 #infinite since we are intially taking an estimate of the possible PDRs
 max_number = 10 #max number of dos messages to send
@@ -40,6 +40,7 @@ contact_lists = ["0hop1thresh"]
 trust_simulation = False
 trust_scores = ["2hop1thresh", "1hop1thresh"]
 slack_hook = ""
+exchange_probabilities = [10, 20, 30, 40, 50]
 
 CONFIG_FILE = "config.json"
 
@@ -58,10 +59,11 @@ def main():
 
     for val_seed, val_ttl, val_start, val_nod, val_city, val_cd, val_nm, \
             val_queue, val_disttype, val_threshold, val_dosnumber, \
-            val_jamtower, val_cl, val_ts in product(
+            val_jamtower, val_cl, val_ts, val_exp in product(
             seeds, ttls, start_days, number_of_days, cities,
             cooldowns, number_of_messages, queuesizes, distributiontype,
-            thresholds, dos_numbers, jamtower, contact_lists, trust_scores):
+            thresholds, dos_numbers, jamtower, contact_lists, trust_scores,
+            exchange_probabilities):
         current_achtung = next(achtungpool)
         config["start-day"] = val_start
         config["end-day"] = val_start+val_nod
@@ -83,7 +85,7 @@ def main():
         config["trust-simulation"] = trust_simulation
         if trust_simulation:
             config["trust-scores"] = val_ts
-
+        config["exchange-probability"] = val_exp
         config_ctr += 1
         achtung_dict[current_achtung].append(config)
         config = {}

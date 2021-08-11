@@ -94,6 +94,7 @@ public class MobySimulator {
         BufferedWriter resultsFileBuffer = null;
         BufferedWriter queueOccupancyFileBuffer = null;
         ArrayList<MobyMessage> deleteList = new ArrayList<>();
+        int exchangeProbability = 0;
 
         try {
             configID = args[0];
@@ -138,6 +139,12 @@ public class MobySimulator {
 
         // Seed the random to make picking subsets in MX reproducible
         random = new Random(seed);
+
+        try {
+            exchangeProbability = configurationJson.get("exchange-probability").getAsInt();
+        } catch (java.lang.UnsupportedOperationException e) {
+            exchangeProbability = 0;
+        }
 
         try {
             slackHook = configurationJson.get("slack-hook").getAsString();
@@ -313,7 +320,11 @@ public class MobySimulator {
                 Collections.sort(sortedList);
 
                 // Simulation message exchanges.
-                messageExchangeHandler(sortedList, simulationHour, dosNumber, queueSize);
+                if (exchangeProbability > 0 && exchangeProbability < 100) {
+                  partialMXHandler(sortedList, simulationHour, dosNumber, queueSize, exchangeProbability);
+                } else {
+                  messageExchangeHandler(sortedList, simulationHour, dosNumber, queueSize);
+                }
 
                 // Check message deliveries.
                 for(MobyMessage m : messageList) {
@@ -462,7 +473,7 @@ public class MobySimulator {
     }
 
     private static void partialMXHandler(List<Integer> towerIDs, int simulationHour,
-                                         int dosNumber, int queueSize) {
+                                         int dosNumber, int queueSize, int exchangeProbability) {
         System.out.println("Sim hour:" + simulationHour + ", TTL:" + timeToLive +
                 ", Dos: " + dosNumber + ", QS: " + queueSize);
 
@@ -473,7 +484,8 @@ public class MobySimulator {
             for (int u1 : usersInTower) {
                 for (int u2: usersInTower) {
                     if (u1 == u2) continue;
-                    if (random.nextBoolean()) {
+                    
+                    if (random.nextInt(100) < exchangeProbability) {
                         MobyUser mobyUser1 = mobyUserHashMap.get(u1);
                         MobyUser mobyUser2 = mobyUserHashMap.get(u2);
 
