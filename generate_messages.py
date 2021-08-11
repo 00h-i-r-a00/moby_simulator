@@ -142,7 +142,7 @@ def main():
     if args.trust_simulation == "true" or args.trust_simulation == "True":
         config["trust-simulation"] = True
     else:
-        config["trust_simulation"] = False
+        config["trust-simulation"] = False
     config["trust-scores"] = args.trust_scores
     config["exchange-probability"] = args.exchange_probability
     random.seed(seed)
