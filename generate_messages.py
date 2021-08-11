@@ -48,7 +48,10 @@ def main():
     parser.add_argument('--trust-simulation', help='Flag to know if sim is a trust sim.', type=str, nargs='?', default=False)
     parser.add_argument('--contact-list', help='Contact list to be used for message generation.', type=str, nargs='?', default="")
     parser.add_argument('--trust-hop-count', help='Hops to trust.', type=int, nargs='?', default=0)
+    parser.add_argument('--exchange-probability', help='Probability of a message exchange for pairs in a tower.', type=int, nargs='?', default=0)
     args = parser.parse_args(sys.argv[1:])
+
+    # TODO: Stop using local args for passthrough config params (ex: exchange_probability)
     number_of_messages = args.number
     start_day = args.start_day
     end_day = args.end_day
@@ -143,6 +146,7 @@ def main():
     config["contact-list"] = contact_list
     config["trust-simulation"] = trust_simulation
     config["trust-scores"] = trust_scores
+    config["exchange-probability"] = args.exchange_probability
     random.seed(seed)
     if jam_tower > 0:
         print("Generating jammed towers list.")
