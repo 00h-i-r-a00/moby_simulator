@@ -487,7 +487,7 @@ public class MobySimulator {
             for (int u1 : usersInTower) {
                 for (int u2: usersInTower) {
                     if (u1 == u2) continue;
-                    if (random.nextBoolean()) {
+                    if (random.nextInt(100) < exchangeProbability) {
                         MobyUser mobyUser1 = mobyUserHashMap.get(u1);
                         MobyUser mobyUser2 = mobyUserHashMap.get(u2);
 
