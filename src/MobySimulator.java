@@ -94,7 +94,7 @@ public class MobySimulator {
         BufferedWriter resultsFileBuffer = null;
         BufferedWriter queueOccupancyFileBuffer = null;
         ArrayList<MobyMessage> deleteList = new ArrayList<>();
-        int exchangeProbability = 0;
+        int exchangeProbability = -1;
 
         try {
             configID = args[0];
@@ -143,7 +143,7 @@ public class MobySimulator {
         try {
             exchangeProbability = configurationJson.get("exchange-probability").getAsInt();
         } catch (java.lang.UnsupportedOperationException e) {
-            exchangeProbability = 0;
+            exchangeProbability = -1;
         }
 
         try {
@@ -320,10 +320,13 @@ public class MobySimulator {
                 Collections.sort(sortedList);
 
                 // Simulation message exchanges.
-                if (exchangeProbability > 0 && exchangeProbability < 100) {
-                  partialMXHandler(sortedList, simulationHour, dosNumber, queueSize, exchangeProbability);
+                if (exchangeProbability >= 0 && exchangeProbability < 100) {
+                    messageExchangeHandler(sortedList, simulationHour, dosNumber, queueSize);
+                } else if (exchangeProbability == -1) {
+                    partialMXHandler(sortedList, simulationHour, dosNumber, queueSize, exchangeProbability);
                 } else {
-                  messageExchangeHandler(sortedList, simulationHour, dosNumber, queueSize);
+                    System.out.println("Invalid exchange probability:" + exchangeProbability);
+                    return;
                 }
 
                 // Check message deliveries.
@@ -484,8 +487,7 @@ public class MobySimulator {
             for (int u1 : usersInTower) {
                 for (int u2: usersInTower) {
                     if (u1 == u2) continue;
-                    
-                    if (random.nextInt(100) < exchangeProbability) {
+                    if (random.nextBoolean()) {
                         MobyUser mobyUser1 = mobyUserHashMap.get(u1);
                         MobyUser mobyUser2 = mobyUserHashMap.get(u2);
 
