@@ -10,7 +10,7 @@ from collections import defaultdict
 from itertools import product
 
 achtungs = []
-achtungs200 = ["achtung02", "achtung03", "achtung04", "achtung05", "achtung06", "achtung07", "achtung12", "achtung13", "achtung14", "achtung15", "achtung16"]
+achtungs200 = ["achtung03", "achtung04", "achtung05", "achtung06", "achtung07", "achtung12", "achtung13", "achtung14", "achtung15", "achtung16"]
 achtungs100 = ["achtung10", "achtung11"]
 for i in range(0, 3):
     achtungs.extend(achtungs200)
@@ -38,9 +38,9 @@ dos_numbers = [0]
 jamtower = [(0, 0)] # Different jamming scenarios.
 contact_lists = ["0hop1thresh"]
 trust_simulation = False
-trust_scores = ["2hop1thresh", "1hop1thresh"]
+trust_scores = ["2hop1thresh", "1hop1thresh"] # Gets overwritten if trust_simulation is False
 slack_hook = ""
-exchange_probabilities = [10, 20, 30, 40, 50]
+exchange_probabilities = [1, 2, 4, 6, 8, 10, 50, 100]
 
 CONFIG_FILE = "config.json"
 
@@ -67,7 +67,7 @@ def main():
         current_achtung = next(achtungpool)
         config["start-day"] = val_start
         config["end-day"] = val_start+val_nod
-        config["ttl"] = val_nod * 24
+        config["ttl"] = val_ttl
         config["city-number"] = val_city
         config["cooldown"] = val_cd
         # Scale number of days according to simulation length
