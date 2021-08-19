@@ -320,7 +320,7 @@ public class MobySimulator {
                 Collections.sort(sortedList);
 
                 // Simulation message exchanges.
-                if (exchangeProbability >= 0 && exchangeProbability < 100) {
+                if (exchangeProbability >= 0 && exchangeProbability <= 100) {
                     partialMXHandler(sortedList, simulationHour, dosNumber, queueSize, exchangeProbability);
                 } else if (exchangeProbability == -1) {
                     messageExchangeHandler(sortedList, simulationHour, dosNumber, queueSize);
