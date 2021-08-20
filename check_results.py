@@ -24,6 +24,7 @@ def main():
     with open(CONFIG_FILE) as inf:
         configs = json.load(inf)
     for achtung in configs.keys():
+        all_configs += len(config[achtung])
         for config in configs[achtung]:
             configuration = config["configuration"]
             if str(run_number) not in configuration:
