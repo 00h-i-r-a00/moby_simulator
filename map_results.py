@@ -24,31 +24,31 @@ def main():
     data_files = {}
     config_ids = {}
     files = os.listdir(RESULTS_PREFIX)
-    for rn in run_numbers:
-        data_files[rn] = []
+    for run_number in run_numbers:
+        data_files[run_number] = []
         for f in files:
-            if f.startswith(str(rn)) and f.endswith(RESULT_EXT) and (not f.endswith(MESSAGE_DELAYS_EXT)) and (not f.endswith(QUEUE_OCCUPANCY_EXT)):
-                data_files[rn].append(f.strip(RESULT_EXT))
-        data_files[rn].sort(key=lambda x: int(x.split('_')[-1].strip(RESULT_EXT)))
-        config_ids[rn] = [int(i.split('_')[-1].strip(RESULT_EXT)) for i in data_files[rn]]
-    dk = list(data_files.keys())
+            if f.startswith(str(run_number)) and f.endswith(RESULT_EXT) and (not f.endswith(MESSAGE_DELAYS_EXT)) and (not f.endswith(QUEUE_OCCUPANCY_EXT)):
+                data_files[run_number].append(f.strip(RESULT_EXT))
+        data_files[run_number].sort(key=lambda x: int(x.split('_')[-1].strip(RESULT_EXT)))
+        config_ids[run_number] = [int(i.split('_')[-1].strip(RESULT_EXT)) for i in data_files[run_number]]
+    data_file_keys = list(data_files.keys())
     # Check if all run number have the same number of simulations
-    assert all(config_ids[x] == config_ids[dk[0]] for x in dk)
+    assert all(config_ids[x] == config_ids[data_file_keys[0]] for x in data_file_keys)
     ratios = {}
-    for rn in dk:
-        ratios[rn] = []
-        filtered_files = data_files[rn]
+    for run_number in data_file_keys:
+        ratios[run_number] = []
+        filtered_files = data_files[run_number]
         for f in filtered_files:
             with open(RESULTS_PREFIX + f + RESULT_EXT, 'r') as infile:
                 last = infile.readlines()[-1]
                 last = last.split(',')
-                delivered = last[-2]
-                total = last[-1]
-                ratios[rn].append(float(delivered) / float(total))
+                delivered = last[3]
+                total = last[4]
+                ratios[run_number].append(float(delivered) / float(total))
     means = []
     deviations = []
-    for i in config_ids[dk[0]]:
-        vals = [ratios[j][i] for j in dk]
+    for i in config_ids[data_file_keys[0]]:
+        vals = [ratios[j][i] for j in data_file_keys]
         means.append(statistics.mean(vals))
         deviations.append(statistics.stdev(vals))
     print(means, deviations)
@@ -58,10 +58,10 @@ def main():
     plt.title('Results seen for run number ' + str(run_numbers) + ' Configurations: ' + str(len(filtered_files)))
     plt.xlabel('Configuration ID')
     plt.ylabel('Delivery Ratio at the end of the simulation')
-    xaxis = [i for i in range(0, len(config_ids[dk[0]]))]
+    xaxis = [i for i in range(0, len(config_ids[data_file_keys[0]]))]
     plt.errorbar(xaxis, means, yerr=deviations, fmt='o', ecolor='b', capsize=5)
     plt.xticks(rotation=45)
-    plt.xticks(xaxis, config_ids[dk[0]])
+    plt.xticks(xaxis, config_ids[data_file_keys[0]])
     report_id = str(run_numbers[0])
     for rn in run_numbers[1:]:
         report_id += "_" + str(rn)
