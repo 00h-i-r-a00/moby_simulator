@@ -20,13 +20,15 @@ def main():
     run_number = args.run_number
     configs = {}
     incomplete = defaultdict(list)
+    config_keys = set()
     all_configs = 0
     with open(CONFIG_FILE) as inf:
         configs = json.load(inf)
     for achtung in configs.keys():
-        all_configs += len(config[achtung])
+        all_configs += len(configs[achtung])
         for config in configs[achtung]:
             configuration = config["configuration"]
+            config_keys.add(configuration.split("_")[0]) # Save this to see what key
             if str(run_number) not in configuration:
                 continue
             results = [RESULTS_DIR + configuration + i for i in [RESULTS_EXT, MESSAGE_DELAYS_EXT, QUEUE_OCCUPANCY_EXT]]
@@ -38,6 +40,7 @@ def main():
     for k in incomplete.keys():
         total += len(incomplete[k])
         print("Incomplete for: ", k, len(incomplete[k]), incomplete[k])
+    print("Configs run:", config_keys)
     print("Total incomplete: ", total, " of:", all_configs)
 
 if __name__ == "__main__":
