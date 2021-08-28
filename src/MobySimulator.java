@@ -480,19 +480,27 @@ public class MobySimulator {
         System.out.println("Sim hour:" + simulationHour + ", TTL:" + timeToLive +
                 ", Dos: " + dosNumber + ", QS: " + queueSize);
 
+        int dosIDForHour = -1;
+
         // Perform exchanges just one way.
         for (int tower : towerIDs) {
             List<Integer> usersInTower = networkStateNew.get(tower);
             Collections.sort(usersInTower);
+
+            if(dosNumber > 0)
+                dosIDForHour = (allTowers.size() * simulationHour) + allTowers.indexOf(tower);
+
             for (int u1 : usersInTower) {
                 for (int u2: usersInTower) {
                     if (u1 == u2) continue;
+                    // Although exchange probability is < 100, assume DoS somehow affects all users
+                    MobyUser mobyUser1 = mobyUserHashMap.get(u1);
+                    MobyUser mobyUser2 = mobyUserHashMap.get(u2);
+                    mobyUser1.performDosExchangeForHour(dosIDForHour, dosNumber);
+                    mobyUser2.performDosExchangeForHour(dosIDForHour, dosNumber);
                     if (random.nextInt(100) < exchangeProbability) {
-                        MobyUser mobyUser1 = mobyUserHashMap.get(u1);
-                        MobyUser mobyUser2 = mobyUserHashMap.get(u2);
-
-                        mobyUser1.performMessageExchangeTailDrop(mobyUser2, dosNumber, -1);
-                        mobyUser2.performMessageExchangeTailDrop(mobyUser1, dosNumber, -1);
+                        mobyUser1.performMessageExchangeTailDrop(mobyUser2, dosNumber, dosIDForHour);
+                        mobyUser2.performMessageExchangeTailDrop(mobyUser1, dosNumber, dosIDForHour);
                     }
                 }
             }
@@ -682,7 +690,7 @@ class MobyUser {
 
         // Dos Sim!
         if(dosIDForHour != -1) {
-            // First exchange dos messages, as many as we have space to accomodate.
+            // First exchange dos messages, as many as we have space to accommodate.
             BitSet newDosMessages = this.getDosQueueDifference(mobyUser);
             for(int bitIndex = newDosMessages.nextSetBit(0);
                 bitIndex != -1 && freeSpace > 0; // Try filling queue as much as possible.
